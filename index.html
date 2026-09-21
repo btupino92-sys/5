@@ -1,29 +1,111 @@
-function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    data.forEach(function(row, index) {
-      if (index === 0) return;
-      
-      var area = row[3];
-      if (!area) area = "SIN_AREA";
-      
-      var sheetName = String(area).trim().substring(0, 30);
-      
-      var sheet = ss.getSheetByName(sheetName);
-      if (!sheet) {
-        sheet = ss.insertSheet(sheetName);
-        sheet.appendRow(data[0]);
-      }
-      
-      sheet.appendRow(row);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procesador de Matriz Excel</title>
+  <!-- Librería SheetJS para leer y escribir archivos Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .btn {
+      background-color: #28a745;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    .btn:disabled {
+      background-color: #cccccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Separador de Áreas desde Excel</h2>
+  <p>Sube tu archivo Excel para agrupar las filas por la columna <strong>DEPENDENCIA ORIGEN EMISION</strong> en pestañas separadas.</p>
+
+  <input type="file" id="upload" accept=".xlsx, .xls, .csv" />
+  <br>
+  <button id="processBtn" class="btn" onclick="procesarExcel()" disabled>Procesar y Descargar Excel</button>
+
+  <p id="status"></p>
+
+  <script>
+    let excelData = null;
+
+    // Detectar cuando el usuario selecciona un archivo
+    document.getElementById('upload').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        // Leer la primera hoja
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+
+        // Convertir la hoja a matriz (array de arrays)
+        excelData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        document.getElementById('processBtn').disabled = false;
+        document.getElementById('status').innerText = "Archivo cargado. Haz clic en el botón para procesar.";
+      };
+      reader.readAsArrayBuffer(file);
     });
 
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Procesado correctamente" }))
-                         .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
-                         .setMimeType(ContentService.MimeType.JSON);
-  }
-}
+    function procesarExcel() {
+      if (!excelData || excelData.length <= 1) {
+        alert("El archivo está vacío o no contiene filas de datos.");
+        return;
+      }
+
+      const headers = excelData[0]; // Fila de encabezados
+      const rows = excelData.slice(1); // Filas de datos
+      const groupedData = {};
+
+      // Agrupar filas por Columna D (Índice 3: DEPENDENCIA ORIGEN EMISION)
+      rows.forEach(row => {
+        if (row.length === 0) return; // Omitir filas vacías
+
+        let area = row[3] ? String(row[3]).trim() : "SIN_AREA";
+        
+        // Sanitizar y limitar el nombre de la pestaña a 31 caracteres
+        let sheetName = area.replace(/[:\/\\?*\[\]]/g, "_").substring(0, 30);
+
+        if (!groupedData[sheetName]) {
+          groupedData[sheetName] = [];
+        }
+        groupedData[sheetName].push(row);
+      });
+
+      // Crear un nuevo libro de trabajo en Excel
+      const newWorkbook = XLSX.utils.book_new();
+
+      // Generar cada pestaña con sus respectivas filas
+      for (const sheetName in groupedData) {
+        const sheetContent = [headers, ...groupedData[sheetName]];
+        const newWorksheet = XLSX.utils.aoa_to_sheet(sheetContent);
+        XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheetName);
+      }
+
+      // Descargar el archivo Excel resultante
+      XLSX.writeFile(newWorkbook, "Matriz_Separada_Por_Areas.xlsx");
+      document.getElementById('status').innerText = "¡Archivo procesado y descargado con éxito!";
+    }
+  </script>
+
+</body>
+</html>

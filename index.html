@@ -3,109 +3,412 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Procesador de Matriz Excel</title>
-  <!-- Librería SheetJS para leer y escribir archivos Excel -->
+  <title>Dashboard y Separador de Matriz Excel</title>
+  <!-- Librerías externas -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
   <style>
+    :root {
+      --primary-color: #0d6efd;
+      --secondary-color: #198754;
+      --bg-color: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-color: #212529;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 50px auto;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
       padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
     }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .upload-card {
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .file-input-wrapper {
+      margin-bottom: 15px;
+    }
+
     .btn {
-      background-color: #28a745;
+      background-color: var(--secondary-color);
       color: white;
-      padding: 10px 20px;
+      padding: 12px 24px;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
-      margin-top: 15px;
+      transition: background 0.2s;
     }
+
+    .btn:hover {
+      background-color: #157347;
+    }
+
     .btn:disabled {
-      background-color: #cccccc;
+      background-color: #ced4da;
+      cursor: not-allowed;
+    }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .kpi-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      background: #e7f1ff;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .kpi-data h3 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .kpi-data p {
+      margin: 5px 0 0 0;
+      color: #6c757d;
+      font-size: 14px;
+    }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .chart-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .chart-card h4 {
+      margin-top: 0;
+      color: #495057;
+    }
+
+    /* Table */
+    .table-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .dashboard-section {
+      display: none; /* Se muestra al cargar datos */
     }
   </style>
 </head>
 <body>
 
-  <h2>Separador de Áreas desde Excel</h2>
-  <p>Sube tu archivo Excel para agrupar las filas por la columna <strong>DEPENDENCIA ORIGEN EMISION</strong> en pestañas separadas.</p>
+<div class="container">
+  <div class="header">
+    <h2><i class="fa-solid fa-chart-pie"></i> Control y Procesamiento de Documentos</h2>
+    <p>Carga la matriz de datos para generar métricas en tiempo real y dividir las pestañas por área.</p>
+  </div>
 
-  <input type="file" id="upload" accept=".xlsx, .xls, .csv" />
-  <br>
-  <button id="processBtn" class="btn" onclick="procesarExcel()" disabled>Procesar y Descargar Excel</button>
+  <!-- Zona de Carga -->
+  <div class="upload-card">
+    <div class="file-input-wrapper">
+      <input type="file" id="upload" accept=".xlsx, .xls, .csv" />
+    </div>
+    <button id="processBtn" class="btn" onclick="procesarYDescargar()" disabled>
+      <i class="fa-solid fa-file-excel"></i> Procesar y Descargar Excel Separado
+    </button>
+    <p id="status" style="margin-top: 10px; color: #6c757d;"></p>
+  </div>
 
-  <p id="status"></p>
+  <!-- Dashboard Indicadores -->
+  <div id="dashboard" class="dashboard-section">
+    <!-- Métricas KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon"><i class="fa-solid fa-file-lines"></i></div>
+        <div class="kpi-data">
+          <h3 id="kpiTotalDocs">0</h3>
+          <p>Total Documentos</p>
+        </div>
+      </div>
 
-  <script>
-    let excelData = null;
+      <div class="kpi-card">
+        <div class="kpi-icon"><i class="fa-solid fa-sitemap"></i></div>
+        <div class="kpi-data">
+          <h3 id="kpiTotalAreas">0</h3>
+          <p>Total de Áreas Originarias</p>
+        </div>
+      </div>
 
-    // Detectar cuando el usuario selecciona un archivo
-    document.getElementById('upload').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+      <div class="kpi-card">
+        <div class="kpi-icon"><i class="fa-solid fa-calculator"></i></div>
+        <div class="kpi-data">
+          <h3 id="kpiAvgDocs">0</h3>
+          <p>Promedio Docs / Área</p>
+        </div>
+      </div>
 
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
+      <div class="kpi-card">
+        <div class="kpi-icon"><i class="fa-solid fa-trophy"></i></div>
+        <div class="kpi-data">
+          <h3 id="kpiTopArea" style="font-size: 16px;">-</h3>
+          <p>Área con Mayor Carga</p>
+        </div>
+      </div>
+    </div>
 
-        // Leer la primera hoja
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
+    <!-- Gráficos -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h4><i class="fa-solid fa-chart-column"></i> Documentos por Área</h4>
+        <canvas id="barChart"></canvas>
+      </div>
 
-        // Convertir la hoja a matriz (array de arrays)
-        excelData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        
+      <div class="chart-card">
+        <h4><i class="fa-solid fa-chart-pie"></i> Distribución Porcentual</h4>
+        <canvas id="pieChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Tabla Detallada -->
+    <div class="table-card">
+      <h4><i class="fa-solid fa-table-list"></i> Resumen por Dependencia Origen</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Dependencia Origen</th>
+            <th>Cantidad de Documentos</th>
+            <th>Porcentaje del Total</th>
+          </tr>
+        </thead>
+        <tbody id="summaryTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  let rawExcelData = null;
+  let groupedData = {};
+  let barChartInstance = null;
+  let pieChartInstance = null;
+
+  document.getElementById('upload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+
+      rawExcelData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+      if (rawExcelData.length > 1) {
+        agruparDatos();
+        renderDashboard();
         document.getElementById('processBtn').disabled = false;
-        document.getElementById('status').innerText = "Archivo cargado. Haz clic en el botón para procesar.";
-      };
-      reader.readAsArrayBuffer(file);
+        document.getElementById('status').innerText = "Matriz procesada correctamente. Revisa los indicadores abajo.";
+      } else {
+        alert("El archivo no contiene filas suficientes.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function agruparDatos() {
+    groupedData = {};
+    const rows = rawExcelData.slice(1);
+
+    rows.forEach(row => {
+      if (row.length === 0) return;
+
+      // Columna D (Índice 3: DEPENDENCIA ORIGEN EMISION)
+      let area = row[3] ? String(row[3]).trim() : "SIN_AREA";
+      let sheetName = area.replace(/[:\/\\?*\[\]]/g, "_").substring(0, 30);
+
+      if (!groupedData[sheetName]) {
+        groupedData[sheetName] = [];
+      }
+      groupedData[sheetName].push(row);
+    });
+  }
+
+  function renderDashboard() {
+    const totalDocs = rawExcelData.length - 1;
+    const areas = Object.keys(groupedData);
+    const totalAreas = areas.length;
+
+    let topAreaName = "-";
+    let topAreaCount = 0;
+
+    const areaLabels = [];
+    const areaCounts = [];
+
+    areas.forEach(area => {
+      const count = groupedData[area].length;
+      areaLabels.push(area);
+      areaCounts.push(count);
+
+      if (count > topAreaCount) {
+        topAreaCount = count;
+        topAreaName = area;
+      }
     });
 
-    function procesarExcel() {
-      if (!excelData || excelData.length <= 1) {
-        alert("El archivo está vacío o no contiene filas de datos.");
-        return;
+    // Actualizar KPIs
+    document.getElementById('kpiTotalDocs').innerText = totalDocs.toLocaleString();
+    document.getElementById('kpiTotalAreas').innerText = totalAreas;
+    document.getElementById('kpiAvgDocs').innerText = Math.round(totalDocs / (totalAreas || 1));
+    document.getElementById('kpiTopArea').innerText = `${topAreaName} (${topAreaCount})`;
+
+    // Construir Tabla Resumen
+    const tableBody = document.getElementById('summaryTableBody');
+    tableBody.innerHTML = "";
+    areas.forEach(area => {
+      const count = groupedData[area].length;
+      const pct = ((count / totalDocs) * 100).toFixed(1);
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${area}</strong></td>
+        <td>${count.toLocaleString()}</td>
+        <td>${pct}%</td>
+      `;
+      tableBody.appendChild(tr);
+    });
+
+    // Renderizar Gráficos
+    renderCharts(areaLabels, areaCounts);
+
+    // Mostrar sección
+    document.getElementById('dashboard').style.display = 'block';
+  }
+
+  function renderCharts(labels, data) {
+    if (barChartInstance) barChartInstance.destroy();
+    if (pieChartInstance) pieChartInstance.destroy();
+
+    const colors = [
+      '#0d6efd', '#6f42c1', '#d63384', '#dc3545', '#fd7e14',
+      '#ffc107', '#198754', '#20c997', '#0dcaf0', '#6c757d'
+    ];
+
+    // Chart de Barras
+    const ctxBar = document.getElementById('barChart').getContext('2d');
+    barChartInstance = new Chart(ctxBar, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Documentos',
+          data: data,
+          backgroundColor: '#0d6efd'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
       }
+    });
 
-      const headers = excelData[0]; // Fila de encabezados
-      const rows = excelData.slice(1); // Filas de datos
-      const groupedData = {};
-
-      // Agrupar filas por Columna D (Índice 3: DEPENDENCIA ORIGEN EMISION)
-      rows.forEach(row => {
-        if (row.length === 0) return; // Omitir filas vacías
-
-        let area = row[3] ? String(row[3]).trim() : "SIN_AREA";
-        
-        // Sanitizar y limitar el nombre de la pestaña a 31 caracteres
-        let sheetName = area.replace(/[:\/\\?*\[\]]/g, "_").substring(0, 30);
-
-        if (!groupedData[sheetName]) {
-          groupedData[sheetName] = [];
-        }
-        groupedData[sheetName].push(row);
-      });
-
-      // Crear un nuevo libro de trabajo en Excel
-      const newWorkbook = XLSX.utils.book_new();
-
-      // Generar cada pestaña con sus respectivas filas
-      for (const sheetName in groupedData) {
-        const sheetContent = [headers, ...groupedData[sheetName]];
-        const newWorksheet = XLSX.utils.aoa_to_sheet(sheetContent);
-        XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheetName);
+    // Chart de Pastel
+    const ctxPie = document.getElementById('pieChart').getContext('2d');
+    pieChartInstance = new Chart(ctxPie, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: colors
+        }]
+      },
+      options: {
+        responsive: true
       }
+    });
+  }
 
-      // Descargar el archivo Excel resultante
-      XLSX.writeFile(newWorkbook, "Matriz_Separada_Por_Areas.xlsx");
-      document.getElementById('status').innerText = "¡Archivo procesado y descargado con éxito!";
+  function procesarYDescargar() {
+    if (!rawExcelData) return;
+
+    const headers = rawExcelData[0];
+    const newWorkbook = XLSX.utils.book_new();
+
+    for (const sheetName in groupedData) {
+      const sheetContent = [headers, ...groupedData[sheetName]];
+      const newWorksheet = XLSX.utils.aoa_to_sheet(sheetContent);
+      XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheetName);
     }
-  </script>
+
+    XLSX.writeFile(newWorkbook, "Matriz_Separada_Por_Areas.xlsx");
+  }
+</script>
 
 </body>
 </html>

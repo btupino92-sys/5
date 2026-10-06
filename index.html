@@ -406,7 +406,6 @@
       if (strNorm.startsWith(key + " ") || strNorm.includes(" " + key + " ")) return true;
     }
 
-    // Se incluyen términos institucionales con soporte sin tildes (DIRECCION, SECRETARIA, ORGANO, etc.)
     const tieneArea = /(DIRECCION|OFICINA|UNIDAD|SUBDIRECCION|CENTRO|EQUIPO|DEPARTAMENTO|SECRETARIA|GERENCIA|MIMP|OACGD|CENDOC|CAR|PROCURADURIA|ORGANO|DESPACHO|COORDINACION|COMISION)/i.test(strNorm);
     
     if (!tieneArea && strNorm.split(" ").length >= 2 && strNorm.split(" ").length <= 4 && !/[0-9]/.test(strNorm)) {
@@ -447,13 +446,11 @@
     rows.forEach(row => {
       if (row.length === 0) return;
 
-      // Año
       let anio = extraerAnio(row);
       if (anio !== "DESCONOCIDO") {
         yearCounts[anio] = (yearCounts[anio] || 0) + 1;
       }
 
-      // Destino (Columna K - Índice 10)
       let destinoValRaw = row[10] ? String(row[10]).trim() : "";
       let destinoVal = "";
 
@@ -464,7 +461,6 @@
         destinoVal = destinoValRaw;
       }
 
-      // Nombre seguro para pestañas de Excel
       let sheetName = destinoVal.replace(/[:\/\?*\[\]]/g, "_").substring(0, 30);
 
       if (!groupedData[sheetName]) {
@@ -476,6 +472,63 @@
       groupedData[sheetName].rows.push(row);
       totalValidDocs++;
     });
+  }
+
+  // Función utilitaria para estilizar la hoja (Ancho automático, cabecera azul, bordes y líneas de cuadrícula)
+  function aplicarEstilosProfesionales(worksheet) {
+    if (!worksheet['!ref']) return;
+    
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    worksheet['!cols'] = [];
+
+    // Calcular ancho automático para cada columna basándose en el contenido más largo
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      let maxLen = 10; // Ancho mínimo por defecto
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        const cell = worksheet[cellAddress];
+        if (cell && cell.v !== undefined && cell.v !== null) {
+          const cellLen = String(cell.v).length;
+          if (cellLen > maxLen) {
+            maxLen = cellLen;
+          }
+        }
+      }
+      // Se asigna un ancho holgado (máximo entre longitud + 4 y un límite razonable de 60)
+      worksheet['!cols'].push({ wch: Math.min(Math.max(maxLen + 4, 12), 60) });
+    }
+
+    // Aplicar estilos visuales a la cabecera y bordes de celdas
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!worksheet[cellAddress]) continue;
+        
+        if (!worksheet[cellAddress].s) worksheet[cellAddress].s = {};
+
+        // Bordes delgados grises para todas las celdas (crea las líneas de cuadrícula visibles)
+        const thinBorder = {
+          top: { style: "thin", color: { rgb: "CBD5E1" } },
+          bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+          left: { style: "thin", color: { rgb: "CBD5E1" } },
+          right: { style: "thin", color: { rgb: "CBD5E1" } }
+        };
+        worksheet[cellAddress].s.border = thinBorder;
+
+        // Estilo especial para la Fila de Cabecera (Fila 0)
+        if (R === 0) {
+          worksheet[cellAddress].s.fill = { fgColor: { rgb: "2563EB" } }; // Azul institucional
+          worksheet[cellAddress].s.font = { bold: true, color: { rgb: "FFFFFF" }, name: "Segoe UI", sz: 11 };
+          worksheet[cellAddress].s.alignment = { horizontal: "center", vertical: "center" };
+        } else {
+          worksheet[cellAddress].s.font = { name: "Segoe UI", sz: 10 };
+          worksheet[cellAddress].s.alignment = { vertical: "center" };
+        }
+      }
+    }
+    
+    // Asegurar que Excel muestre las líneas de división de la hoja
+    if (!worksheet['!views']) worksheet['!views'] = [{ showGridLines: true }];
   }
 
   function renderDashboard() {
@@ -500,7 +553,6 @@
       }
     });
 
-    // Rango de años
     const aniosValidos = Object.keys(yearCounts).filter(y => y !== "DESCONOCIDO").sort();
     const minAnio = aniosValidos.length > 0 ? aniosValidos[0] : "N/A";
     const maxAnio = aniosValidos.length > 0 ? aniosValidos[aniosValidos.length - 1] : "N/A";
@@ -517,14 +569,12 @@
     const totalDocsinDestinos = countsDestinos.reduce((a, b) => a + b, 0);
     const avg = totalDestinos > 0 ? Math.round(totalDocsinDestinos / totalDestinos) : 0;
 
-    // Actualizar KPIs
     document.getElementById('kpiTotalDocs').innerText = totalValidDocs.toLocaleString();
     document.getElementById('kpiYearRange').innerText = minAnio === maxAnio ? minAnio : `${minAnio} - ${maxAnio}`;
     document.getElementById('kpiTotalDestinos').innerText = totalDestinos;
     document.getElementById('kpiTopYear').innerText = `${topYear} (${topYearCount.toLocaleString()})`;
     document.getElementById('kpiTopDestino').innerText = `${topDestinoName} (${topDestinoCount})`;
 
-    // Actualizar datos de plantillas Word
     document.getElementById('repTotalDocs').innerText = totalValidDocs.toLocaleString();
     document.getElementById('repStartYear').innerText = minAnio;
     document.getElementById('repEndYear').innerText = maxAnio;
@@ -537,7 +587,6 @@
     document.getElementById('noteTopDestino').innerText = `${topDestinoName} (${topDestinoCount} docs)`;
     document.getElementById('noteCurrentDate').innerText = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Rellenar tablas de informes
     const repTableBody = document.getElementById('repTableBody');
     const noteTableBody = document.getElementById('noteTableBody');
     const summaryTableBody = document.getElementById('summaryTableBody');
@@ -550,164 +599,4 @@
       const dataObj = groupedData[key];
       const count = dataObj.rows.length;
       const pct = totalDocsinDestinos > 0 ? ((count / totalDocsinDestinos) * 100).toFixed(1) : 0;
-      let badge = count > avg ? '<span style="color:#d97706; font-weight:bold;">Alta Carga</span>' : '<span style="color:#16a34a;">Normal</span>';
-
-      // 1. Dashboard Table
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${dataObj.fullName}</strong></td>
-        <td>${count.toLocaleString()}</td>
-        <td>${pct}%</td>
-        <td>${badge}</td>
-      `;
-      summaryTableBody.appendChild(tr);
-
-      // 2. Report Table (.docx)
-      const trRep = document.createElement('tr');
-      trRep.innerHTML = `
-        <td style="border: 1px solid #cbd5e1; padding: 6px;">${dataObj.fullName}</td>
-        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${count.toLocaleString()}</td>
-        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${pct}%</td>
-        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${count > avg ? 'Alta' : 'Normal'}</td>
-      `;
-      repTableBody.appendChild(trRep);
-
-      // 3. Note Table (.docx)
-      const trNote = document.createElement('tr');
-      trNote.innerHTML = `
-        <td style="border: 1px solid #cbd5e1; padding: 6px;">${dataObj.fullName}</td>
-        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${count.toLocaleString()}</td>
-        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${pct}%</td>
-      `;
-      noteTableBody.appendChild(trNote);
-    });
-
-    renderCharts(labelsDestinos, countsDestinos, aniosValidos, aniosValidos.map(y => yearCounts[y]));
-    document.getElementById('dashboard').style.display = 'block';
-  }
-
-  function renderCharts(labelsDestinos, dataDestinos, labelsAnios, dataAnios) {
-    if (barChartInstance) barChartInstance.destroy();
-    if (pieChartInstance) pieChartInstance.destroy();
-    if (lineChartInstance) lineChartInstance.destroy();
-
-    const colors = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#d97706', '#16a34a', '#0891b2', '#4f46e5'];
-
-    lineChartInstance = new Chart(document.getElementById('lineChart'), {
-      type: 'line',
-      data: {
-        labels: labelsAnios,
-        datasets: [{
-          label: 'Documentos Emitidos',
-          data: dataAnios,
-          borderColor: '#2563eb',
-          backgroundColor: 'rgba(37, 99, 235, 0.1)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 5
-        }]
-      },
-      options: { responsive: true }
-    });
-
-    barChartInstance = new Chart(document.getElementById('barChart'), {
-      type: 'bar',
-      data: { labels: labelsDestinos, datasets: [{ label: 'Documentos', data: dataDestinos, backgroundColor: '#2563eb' }] },
-      options: { responsive: true, plugins: { legend: { display: false } } }
-    });
-
-    pieChartInstance = new Chart(document.getElementById('pieChart'), {
-      type: 'doughnut',
-      data: { labels: labelsDestinos, datasets: [{ data: dataDestinos, backgroundColor: colors }] },
-      options: { responsive: true }
-    });
-  }
-
-  // 1. Descargar Excel Multitabla por Destinos (Columna K)
-  function procesarYDescargarExcelMultitabla() {
-    if (!rawExcelData) return;
-
-    const headers = rawExcelData[0];
-    const newWorkbook = XLSX.utils.book_new();
-
-    for (const sheetName in groupedData) {
-      const dataObj = groupedData[sheetName];
-      const sheetContent = [headers, ...dataObj.rows];
-      const newWorksheet = XLSX.utils.aoa_to_sheet(sheetContent);
-      XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheetName);
-    }
-
-    XLSX.writeFile(newWorkbook, "Matriz_Consolidada_Por_Destinos.xlsx");
-  }
-
-  // 2. Descargar ZIP con archivos Excel individuales usando nombres completos de las unidades
-  async function descargarZipIndividuales() {
-    if (!rawExcelData) return;
-
-    const zip = new JSZip();
-    const headers = rawExcelData[0];
-
-    for (const sheetName in groupedData) {
-      const dataObj = groupedData[sheetName];
-      
-      const singleWorkbook = XLSX.utils.book_new();
-      const sheetContent = [headers, ...dataObj.rows];
-      const worksheet = XLSX.utils.aoa_to_sheet(sheetContent);
-      XLSX.utils.book_append_sheet(singleWorkbook, worksheet, "Documentos");
-
-      const excelBuffer = XLSX.write(singleWorkbook, { bookType: 'xlsx', type: 'array' });
-
-      const cleanFileName = dataObj.fullName.replace(/[:\/\?*\[\]]/g, "_").trim();
-      zip.file(`Destino_${cleanFileName}.xlsx`, excelBuffer);
-    }
-
-    const content = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(content);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "Excel_Individuales_Por_Destino.zip";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  // 3. Descargar Informe Técnico en Word (.docx)
-  function descargarInformeWord() {
-    const htmlContent = document.getElementById('wordReportTemplate').innerHTML;
-    const converted = htmlDocx.asBlob(htmlContent, {
-      orientation: 'portrait',
-      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
-    });
-
-    const url = URL.createObjectURL(converted);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "Informe_Tecnico_Gestion_Documental.docx";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  // 4. Descargar Nota a SG en Word (.docx)
-  function descargarNotaWord() {
-    const htmlContent = document.getElementById('wordNoteTemplate').innerHTML;
-    const converted = htmlDocx.asBlob(htmlContent, {
-      orientation: 'portrait',
-      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
-    });
-
-    const url = URL.createObjectURL(converted);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "Nota_Informativa_Secretaria_General.docx";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-</script>
-
-</body>
-</html>
+      let badge = count > avg ? '<span style="color:#d97706; font-weight:bold;">Alta Carga</span>'

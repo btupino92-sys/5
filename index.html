@@ -17,6 +17,7 @@
       --accent: #2563eb;
       --success: #16a34a;
       --warning: #d97706;
+      --memo: #7c3aed;
       --bg: #f8fafc;
       --card-bg: #ffffff;
       --text: #1e293b;
@@ -74,6 +75,8 @@
     .btn-excel:hover { background-color: #15803d; }
     .btn-pdf { background-color: var(--accent); color: white; }
     .btn-pdf:hover { background-color: #1d4ed8; }
+    .btn-memo { background-color: var(--memo); color: white; }
+    .btn-memo:hover { background-color: #6d28d9; }
     .btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
 
     /* KPIs */
@@ -141,17 +144,33 @@
 
     .dashboard-section { display: none; }
 
-    /* Estilos del Informe PDF oculto */
-    #reportTemplate {
+    /* Plantillas PDF ocultas */
+    .pdf-template {
       display: none;
       padding: 40px;
       background: #fff;
       color: #1e293b;
       font-family: Arial, sans-serif;
     }
-    #reportTemplate h1 { color: #0f172a; border-bottom: 2px solid #2563eb; padding-bottom: 8px; font-size: 22px; }
-    #reportTemplate h2 { color: #2563eb; font-size: 16px; margin-top: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
-    #reportTemplate p, #reportTemplate li { font-size: 12px; line-height: 1.6; text-align: justify; }
+    .pdf-template h1 { color: #0f172a; border-bottom: 2px solid #2563eb; padding-bottom: 8px; font-size: 18px; text-align: center; }
+    .pdf-template h2 { color: #2563eb; font-size: 14px; margin-top: 18px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+    .pdf-template p, .pdf-template li { font-size: 11px; line-height: 1.5; text-align: justify; }
+    
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      font-size: 10px;
+    }
+    .report-table th, .report-table td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+    }
+    .report-table th {
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
   </style>
 </head>
 <body>
@@ -159,7 +178,7 @@
 <div class="container">
   <div class="header">
     <h2><i class="fa-solid fa-chart-line"></i> Sistema de Control y Gestión Documental</h2>
-    <p>Procesamiento automatizado de matrices, filtro por destino (Columna K), rango de años e informes ejecutivos.</p>
+    <p>Procesamiento automatizado de matrices, filtro por destino (Columna K), informes técnicos y notas para Secretaría General (SG).</p>
   </div>
 
   <div class="upload-card">
@@ -169,14 +188,17 @@
         <i class="fa-solid fa-file-excel"></i> Descargar Excel por Destinos (Col. K)
       </button>
       <button id="pdfBtn" class="btn btn-pdf" onclick="generarInformePDF()" disabled>
-        <i class="fa-solid fa-file-pdf"></i> Descargar Informe Técnico (PDF)
+        <i class="fa-solid fa-file-pdf"></i> Descargar Informe Técnico
+      </button>
+      <button id="memoBtn" class="btn btn-memo" onclick="generarNotaSGPDF()" disabled>
+        <i class="fa-solid fa-file-lines"></i> Descargar Nota / Memo para SG
       </button>
     </div>
     <p id="status" style="margin-top: 10px; color: #64748b; font-size: 14px;"></p>
   </div>
 
   <div id="dashboard" class="dashboard-section">
-    <!-- Indicadores KPIs Informativos -->
+    <!-- Indicadores KPIs -->
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-icon"><i class="fa-solid fa-file-contract"></i></div>
@@ -219,7 +241,7 @@
       </div>
     </div>
 
-    <!-- Gráficos Varios -->
+    <!-- Gráficos -->
     <div class="charts-grid">
       <div class="chart-card" style="grid-column: span 2;">
         <h4><i class="fa-solid fa-chart-line"></i> Tendencia de Emisión Documental por Año (Columna FE EMISION)</h4>
@@ -255,36 +277,76 @@
   </div>
 </div>
 
-<!-- Plantilla para Exportar Informe PDF -->
-<div id="reportTemplate">
-  <h1 style="text-align: center;">INFORME TÉCNICO DE EVALUACIÓN DOCUMENTAL</h1>
-  <p style="text-align: center; font-size: 11px; color: #64748b;">Generado automáticamente por el Sistema de Control Documental</p>
-  <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+<!-- PLANTILLA 1: INFORME TÉCNICO DETALLADO -->
+<div id="reportTemplate" class="pdf-template">
+  <h1>INFORME TÉCNICO N° 001-2026-SCD/OTD</h1>
+  <p style="text-align: right; font-size: 11px;"><strong>Fecha:</strong> <span id="currentDate1"></span></p>
+  <p><strong>A:</strong> Dirección de Gestión Documental y Archivo</p>
+  <p><strong>Asunto:</strong> Evaluación y consolidado de carga documental segmentada por unidades orgánicas de destino (Columna K).</p>
+  <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0;">
 
-  <h2>1. ANTECEDENTES</h2>
-  <p>En el marco de la optimización del flujo documental y la transformación digital administrativa, se realizó la carga y análisis sistemático de la matriz de trámites. El presente reporte consolida los volúmenes procesados segmentados por el destino institucional especificado en la columna K.</p>
+  <h2>1. ANTECEDENTES Y OBJETIVO</h2>
+  <p>El presente informe técnico tiene por objeto evaluar la volumetría de expedientes y documentos institucionales registrados en la matriz de gestión, procesando el desglose analítico por el destino de atención especificado en la columna K del acervo institucional.</p>
 
-  <h2>2. ANÁLISIS TEMPORAL Y VOLUMETRÍA</h2>
-  <p>A partir del procesamiento de la matriz institucional se obtuvieron las siguientes métricas de tiempo e indicadores clave:</p>
-  <ul>
-    <li><strong>Rango Temporal de Documentos:</strong> Registros desde el año <strong id="pdfStartYear"></strong> hasta el año <strong id="pdfEndYear"></strong>.</li>
-    <li><strong>Año de Mayor Actividad:</strong> <span id="pdfTopYear"></span>.</li>
-    <li><strong>Volumen Total de Documentos Evaluados:</strong> <span id="pdfTotalDocs"></span> expediente(s).</li>
-    <li><strong>Destinos Institucionales Activos:</strong> <span id="pdfTotalAreas"></span> unidad(es) de destino.</li>
-    <li><strong>Destino con Mayor Carga:</strong> <span id="pdfTopArea"></span>.</li>
-  </ul>
+  <h2>2. ANÁLISIS DE VOLUMETRÍA POR UNIDAD ORGÁNICA (DESTINO)</h2>
+  <p>A continuación, se detalla el cuadro consolidado de unidades orgánicas receptoras, ordenadas por volumen documental y su respectiva participación porcentual respecto al total evaluado (<span id="repTotalDocs"></span> documentos):</p>
+  
+  <table class="report-table">
+    <thead>
+      <tr>
+        <th style="width: 10%;">N°</th>
+        <th style="width: 55%;">Unidad Orgánica / Destino (Columna K)</th>
+        <th style="width: 20%;">Expedientes</th>
+        <th style="width: 15%;">Incidencia (%)</th>
+      </tr>
+    </thead>
+    <tbody id="pdfTableBody"></tbody>
+  </table>
 
   <h2>3. CONCLUSIONES</h2>
   <ul>
-    <li>El acervo documental abarca un periodo histórico desde el año <strong id="pdfConclStartYear"></strong>, permitiendo trazar la tendencia de emisión a lo largo del tiempo.</li>
-    <li>Se evidencia una concentración relevante de recepción y asignación documental en el destino <strong id="pdfTopAreaConcl"></strong>.</li>
+    <li>El análisis histórico comprende desde el año <strong id="pdfStartYear"></strong> hasta el <strong id="pdfEndYear"></strong>, siendo el periodo <span id="pdfTopYear"></span> el de mayor concentración operativa.</li>
+    <li>Se identifica que la unidad orgánica <strong><span id="pdfTopAreaConcl"></span></strong> concentra la mayor demanda institucional, evidenciando saturación operativa que amerita atención prioritaria de recursos.</li>
   </ul>
 
   <h2>4. RECOMENDACIONES</h2>
   <ul>
-    <li><strong>Plan de Archivo e Inventario:</strong> Priorizar la digitalización y gestión de la documentación dirigida a las áreas con mayor afluencia.</li>
-    <li><strong>Equilibrio Operativo:</strong> Asignar soporte técnico a las dependencias receptoras que registran los picos más altos de volumen documental.</li>
+    <li>Derivar el presente informe a la Secretaría General (SG) para la toma de decisiones estratégicas en la distribución de recursos logísticos y de personal.</li>
+    <li>Implementar mecanismos de seguimiento automatizado para las dependencias con mayor carga de documentos de destino.</li>
   </ul>
+</div>
+
+<!-- PLANTILLA 2: NOTA / MEMORANDO PARA ELEVAR A SECRETARÍA GENERAL (SG) -->
+<div id="memoTemplate" class="pdf-template">
+  <h1>NOTA N° 045-2026-SCD/SG</h1>
+  <p style="text-align: right; font-size: 11px;"><strong>Fecha:</strong> <span id="currentDate2"></span></p>
+  <p><strong>A:</strong> Secretaría General (SG)</p>
+  <p><strong>DE:</strong> Oficina de Control y Gestión Documental</p>
+  <p><strong>ASUNTO:</strong> Elevación de consolidado y métricas de carga documental por unidades de destino (Columna K) para acciones resolutivas.</p>
+  <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0;">
+
+  <h2>1. PROPÓSITO</h2>
+  <p>Poner en conocimiento de la Secretaría General el diagnóstico ejecutivo sobre el flujo de expedientes institucionales segmentados por su unidad de destino final, con el propósito de optimizar la capacidad de respuesta operativa de la entidad.</p>
+
+  <h2>2. RESUMEN EJECUTIVO Y DISTRIBUCIÓN POR DESTINO</h2>
+  <p>Del total de <span id="memoTotalDocs"></span> expedientes evaluados en el periodo comprendido entre <span id="memoStartYear"></span> y <span id="memoEndYear"></span>, se presenta el desglose agrupado de las principales unidades orgánicas receptoras:</p>
+
+  <table class="report-table">
+    <thead>
+      <tr>
+        <th style="width: 10%;">N°</th>
+        <th style="width: 55%;">Unidad Orgánica Destinataria (Columna K)</th>
+        <th style="width: 20%;">Documentos</th>
+        <th style="width: 15%;">Participación</th>
+      </tr>
+    </thead>
+    <tbody id="memoTableBody"></tbody>
+  </table>
+
+  <h2>3. PETITORIO / ACCIÓN SOLICITADA</h2>
+  <p>Se solicita a su Despacho disponer las medidas administrativas y presupuestales pertinentes para mitigar la alta concentración de trámites en la unidad <strong><span id="memoTopArea"></span></strong>, garantizando la fluidez y eficacia institucional.</p>
+  <br><br>
+  <p style="text-align: center;">____________________________________________<br><strong>Jefatura de Control y Gestión Documental</strong></p>
 </div>
 
 <script>
@@ -319,6 +381,7 @@
         renderDashboard();
         document.getElementById('processBtn').disabled = false;
         document.getElementById('pdfBtn').disabled = false;
+        document.getElementById('memoBtn').disabled = false;
         document.getElementById('status').innerText = "Matriz analizada y procesada por Destino (Columna K) correctamente.";
       } else {
         alert("El archivo no contiene filas de datos.");
@@ -344,7 +407,6 @@
     return false;
   }
 
-  // Función para extraer el año de la Columna C (FE EMISION) o NUMANIO (Columna A)
   function extraerAnio(fila) {
     if (fila[0] && !isNaN(fila[0]) && String(fila[0]).length === 4) {
       return String(fila[0]);
@@ -376,13 +438,12 @@
     rows.forEach(row => {
       if (row.length === 0) return;
 
-      // 1. Procesar Año
       let anio = extraerAnio(row);
       if (anio !== "DESCONOCIDO") {
         yearCounts[anio] = (yearCounts[anio] || 0) + 1;
       }
 
-      // 2. Procesar Destino (Columna K - Índice 10)
+      // Columna K (Índice 10)
       let destinoVal = row[10] ? String(row[10]).trim() : "";
 
       if (!destinoVal || esNombrePersona(destinoVal)) {
@@ -421,12 +482,10 @@
       }
     });
 
-    // Calcular Rango de Años
     const aniosValidos = Object.keys(yearCounts).filter(y => y !== "DESCONOCIDO").sort();
     const minAnio = aniosValidos.length > 0 ? aniosValidos[0] : "N/A";
     const maxAnio = aniosValidos.length > 0 ? aniosValidos[aniosValidos.length - 1] : "N/A";
 
-    // Año con más documentos
     let topYear = "-";
     let topYearCount = 0;
     aniosValidos.forEach(y => {
@@ -438,6 +497,7 @@
 
     const totalDocsinDestinos = countsDestinos.reduce((a, b) => a + b, 0);
     const avg = totalDestinos > 0 ? Math.round(totalDocsinDestinos / totalDestinos) : 0;
+    const fechaActualStr = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
     // Actualizar KPIs del Dashboard
     document.getElementById('kpiTotalDocs').innerText = totalValidDocs.toLocaleString();
@@ -446,23 +506,45 @@
     document.getElementById('kpiTopYear').innerText = `${topYear} (${topYearCount.toLocaleString()})`;
     document.getElementById('kpiTopArea').innerText = `${topDestinoName} (${topDestinoCount})`;
 
-    // Actualizar plantilla de PDF
-    document.getElementById('pdfTotalDocs').innerText = totalValidDocs.toLocaleString();
+    // Actualizar Plantillas PDF / Memo
+    document.getElementById('currentDate1').innerText = fechaActualStr;
+    document.getElementById('currentDate2').innerText = fechaActualStr;
+    document.getElementById('repTotalDocs').innerText = totalValidDocs.toLocaleString();
+    document.getElementById('memoTotalDocs').innerText = totalValidDocs.toLocaleString();
     document.getElementById('pdfStartYear').innerText = minAnio;
     document.getElementById('pdfEndYear').innerText = maxAnio;
+    document.getElementById('memoStartYear').innerText = minAnio;
+    document.getElementById('memoEndYear').innerText = maxAnio;
     document.getElementById('pdfTopYear').innerText = `${topYear} con ${topYearCount.toLocaleString()} documento(s)`;
-    document.getElementById('pdfTotalAreas').innerText = totalDestinos;
-    document.getElementById('pdfTopArea').innerText = `${topDestinoName} con ${topDestinoCount} documento(s)`;
     document.getElementById('pdfTopAreaConcl').innerText = topDestinoName;
-    document.getElementById('pdfConclStartYear').innerText = minAnio;
+    document.getElementById('memoTopArea').innerText = topDestinoName;
 
-    // Poblado de Tabla
-    const tableBody = document.getElementById('summaryTableBody');
-    tableBody.innerHTML = "";
-    destinos.forEach(dest => {
+    // Llenar Tablas dentro de los Reportes (Ordenadas por mayor cantidad)
+    let destinosOrdenados = [...destinos].sort((a, b) => groupedData[b].length - groupedData[a].length);
+    
+    let tableRowsHTML = "";
+    destinosOrdenados.forEach((dest, index) => {
       const count = groupedData[dest].length;
       const pct = totalDocsinDestinos > 0 ? ((count / totalDocsinDestinos) * 100).toFixed(1) : 0;
-      
+      tableRowsHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td><strong>${dest}</strong></td>
+          <td>${count.toLocaleString()}</td>
+          <td>${pct}%</td>
+        </tr>
+      `;
+    });
+
+    document.getElementById('pdfTableBody').innerHTML = tableRowsHTML;
+    document.getElementById('memoTableBody').innerHTML = tableRowsHTML;
+
+    // Poblado de Tabla Principal Dashboard
+    const tableBody = document.getElementById('summaryTableBody');
+    tableBody.innerHTML = "";
+    destinosOrdenados.forEach(dest => {
+      const count = groupedData[dest].length;
+      const pct = totalDocsinDestinos > 0 ? ((count / totalDocsinDestinos) * 100).toFixed(1) : 0;
       let badge = count > avg ? '<span style="color:#d97706; font-weight:bold;">Alta Carga</span>' : '<span style="color:#16a34a;">Normal</span>';
 
       const tr = document.createElement('tr');
@@ -486,7 +568,6 @@
 
     const colors = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#d97706', '#16a34a', '#0891b2', '#4f46e5'];
 
-    // Line Chart (Años)
     lineChartInstance = new Chart(document.getElementById('lineChart'), {
       type: 'line',
       data: {
@@ -504,14 +585,12 @@
       options: { responsive: true }
     });
 
-    // Bar Chart
     barChartInstance = new Chart(document.getElementById('barChart'), {
       type: 'bar',
       data: { labels: labelsDestinos, datasets: [{ label: 'Documentos', data: dataDestinos, backgroundColor: '#2563eb' }] },
       options: { responsive: true, plugins: { legend: { display: false } } }
     });
 
-    // Pie Chart
     pieChartInstance = new Chart(document.getElementById('pieChart'), {
       type: 'doughnut',
       data: { labels: labelsDestinos, datasets: [{ data: dataDestinos, backgroundColor: colors }] },
@@ -541,6 +620,23 @@
     const opt = {
       margin:       10,
       filename:     'Informe_Tecnico_Gestion_Documental.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+      element.style.display = 'none';
+    });
+  }
+
+  function generarNotaSGPDF() {
+    const element = document.getElementById('memoTemplate');
+    element.style.display = 'block';
+
+    const opt = {
+      margin:       10,
+      filename:     'Nota_Elevacion_Secretaria_General.pdf',
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2 },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }

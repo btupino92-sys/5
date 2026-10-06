@@ -159,14 +159,14 @@
 <div class="container">
   <div class="header">
     <h2><i class="fa-solid fa-chart-line"></i> Sistema de Control y Gestión Documental</h2>
-    <p>Procesamiento automatizado de matrices, filtro de dependencias, rango de años e informes ejecutivos.</p>
+    <p>Procesamiento automatizado de matrices, filtro por destino (Columna K), rango de años e informes ejecutivos.</p>
   </div>
 
   <div class="upload-card">
     <input type="file" id="upload" accept=".xlsx, .xls, .csv" />
     <div class="action-buttons">
       <button id="processBtn" class="btn btn-excel" onclick="procesarYDescargarExcel()" disabled>
-        <i class="fa-solid fa-file-excel"></i> Descargar Excel por Áreas
+        <i class="fa-solid fa-file-excel"></i> Descargar Excel por Destinos (Col. K)
       </button>
       <button id="pdfBtn" class="btn btn-pdf" onclick="generarInformePDF()" disabled>
         <i class="fa-solid fa-file-pdf"></i> Descargar Informe Técnico (PDF)
@@ -198,7 +198,7 @@
         <div class="kpi-icon"><i class="fa-solid fa-building-user"></i></div>
         <div class="kpi-data">
           <h3 id="kpiTotalAreas">0</h3>
-          <p>Dependencias Origen</p>
+          <p>Destinos (Columna K)</p>
         </div>
       </div>
 
@@ -214,7 +214,7 @@
         <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
         <div class="kpi-data">
           <h3 id="kpiTopArea" style="font-size: 13px;">-</h3>
-          <p>Mayor Carga Documental</p>
+          <p>Mayor Carga por Destino</p>
         </div>
       </div>
     </div>
@@ -227,23 +227,23 @@
       </div>
 
       <div class="chart-card">
-        <h4><i class="fa-solid fa-chart-bar"></i> Volumetría por Dependencia</h4>
+        <h4><i class="fa-solid fa-chart-bar"></i> Volumetría por Destino (Columna K)</h4>
         <canvas id="barChart"></canvas>
       </div>
 
       <div class="chart-card">
-        <h4><i class="fa-solid fa-chart-pie"></i> Distribución Porcentual por Área</h4>
+        <h4><i class="fa-solid fa-chart-pie"></i> Distribución Porcentual por Destino</h4>
         <canvas id="pieChart"></canvas>
       </div>
     </div>
 
     <!-- Tabla Detallada -->
     <div class="table-card">
-      <h4><i class="fa-solid fa-list-check"></i> Concentrado de Documentos por Dependencia Institucional</h4>
+      <h4><i class="fa-solid fa-list-check"></i> Concentrado de Documentos por Destino Institucional (Columna K)</h4>
       <table>
         <thead>
           <tr>
-            <th>Dependencia Origen</th>
+            <th>Destino (Columna K)</th>
             <th>Cantidad de Documentos</th>
             <th>Participación (%)</th>
             <th>Estado de Carga</th>
@@ -262,7 +262,7 @@
   <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
 
   <h2>1. ANTECEDENTES</h2>
-  <p>En el marco de la optimización del flujo documental y la transformación digital administrativa, se realizó la carga y análisis sistemático de la matriz de trámites. El presente reporte consolida los volúmenes procesados, identificando la evolución temporal de los documentos emitidos y filtrando registros nominales de personas físicas para enfocar el diagnóstico únicamente en las unidades funcionales y dependencias de origen.</p>
+  <p>En el marco de la optimización del flujo documental y la transformación digital administrativa, se realizó la carga y análisis sistemático de la matriz de trámites. El presente reporte consolida los volúmenes procesados segmentados por el destino institucional especificado en la columna K.</p>
 
   <h2>2. ANÁLISIS TEMPORAL Y VOLUMETRÍA</h2>
   <p>A partir del procesamiento de la matriz institucional se obtuvieron las siguientes métricas de tiempo e indicadores clave:</p>
@@ -270,22 +270,20 @@
     <li><strong>Rango Temporal de Documentos:</strong> Registros desde el año <strong id="pdfStartYear"></strong> hasta el año <strong id="pdfEndYear"></strong>.</li>
     <li><strong>Año de Mayor Actividad:</strong> <span id="pdfTopYear"></span>.</li>
     <li><strong>Volumen Total de Documentos Evaluados:</strong> <span id="pdfTotalDocs"></span> expediente(s).</li>
-    <li><strong>Dependencias Institucionales Activas:</strong> <span id="pdfTotalAreas"></span> unidad(es) de origen.</li>
-    <li><strong>Dependencia con Mayor Carga:</strong> <span id="pdfTopArea"></span>.</li>
+    <li><strong>Destinos Institucionales Activos:</strong> <span id="pdfTotalAreas"></span> unidad(es) de destino.</li>
+    <li><strong>Destino con Mayor Carga:</strong> <span id="pdfTopArea"></span>.</li>
   </ul>
 
   <h2>3. CONCLUSIONES</h2>
   <ul>
     <li>El acervo documental abarca un periodo histórico desde el año <strong id="pdfConclStartYear"></strong>, permitiendo trazar la tendencia de emisión a lo largo del tiempo.</li>
-    <li>Se evidencia una concentración relevante de la producción documental en la unidad <strong id="pdfTopAreaConcl"></strong>.</li>
-    <li>Se realizó la depuración exitosa de nombres de personas en las asignaciones de origen para enfocar los datos en la estructura de dependencias.</li>
+    <li>Se evidencia una concentración relevante de recepción y asignación documental en el destino <strong id="pdfTopAreaConcl"></strong>.</li>
   </ul>
 
   <h2>4. RECOMENDACIONES</h2>
   <ul>
-    <li><strong>Plan de Archivo e Inventario:</strong> Priorizar la digitalización y depuración de la documentación más antigua (iniciada en el año <span id="pdfRecStartYear"></span>) para liberar espacio físico o digital.</li>
-    <li><strong>Equilibrio Operativo:</strong> Asignar soporte técnico a las unidades que registran los picos más altos de producción documental.</li>
-    <li><strong>Estandarización de Fechas y Áreas:</strong> Mantener el formato estándar en la columna de fecha de emisión (`FE EMISION`) para facilitar auditorías periódicas.</li>
+    <li><strong>Plan de Archivo e Inventario:</strong> Priorizar la digitalización y gestión de la documentación dirigida a las áreas con mayor afluencia.</li>
+    <li><strong>Equilibrio Operativo:</strong> Asignar soporte técnico a las dependencias receptoras que registran los picos más altos de volumen documental.</li>
   </ul>
 </div>
 
@@ -321,7 +319,7 @@
         renderDashboard();
         document.getElementById('processBtn').disabled = false;
         document.getElementById('pdfBtn').disabled = false;
-        document.getElementById('status').innerText = "Matriz analizada, depurada y procesada por fechas correctamente.";
+        document.getElementById('status').innerText = "Matriz analizada y procesada por Destino (Columna K) correctamente.";
       } else {
         alert("El archivo no contiene filas de datos.");
       }
@@ -348,22 +346,18 @@
 
   // Función para extraer el año de la Columna C (FE EMISION) o NUMANIO (Columna A)
   function extraerAnio(fila) {
-    // Intentar primero con la Columna A (NUMANIO) si existe
     if (fila[0] && !isNaN(fila[0]) && String(fila[0]).length === 4) {
       return String(fila[0]);
     }
 
-    // Intentar con la Columna C (FE EMISION - Índice 2)
     let fechaRaw = fila[2];
     if (!fechaRaw) return "DESCONOCIDO";
 
-    // Si es un número en formato fecha de Excel
     if (typeof fechaRaw === 'number') {
       let dateObj = XLSX.SSF.parse_date_code(fechaRaw);
       if (dateObj && dateObj.y) return String(dateObj.y);
     }
 
-    // Si es un texto tipo DD/MM/YYYY o YYYY-MM-DD
     let strFecha = String(fechaRaw);
     let match = strFecha.match(/\b(19\d\d|20\d\d)\b/);
     if (match) return match[0];
@@ -388,15 +382,15 @@
         yearCounts[anio] = (yearCounts[anio] || 0) + 1;
       }
 
-      // 2. Procesar Área (Columna D - Índice 3)
-      let origVal = row[3] ? String(row[3]).trim() : "";
+      // 2. Procesar Destino (Columna K - Índice 10)
+      let destinoVal = row[10] ? String(row[10]).trim() : "";
 
-      if (!origVal || esNombrePersona(origVal)) {
+      if (!destinoVal || esNombrePersona(destinoVal)) {
         ignoredCount++;
-        origVal = "OTRAS ASIGNACIONES / PERSONAL";
+        destinoVal = "OTROS DESTINOS / PERSONAL";
       }
 
-      let sheetName = origVal.replace(/[:\/\\?*\[\]]/g, "_").substring(0, 30);
+      let sheetName = destinoVal.replace(/[:\/\\?*\[\]]/g, "_").substring(0, 30);
 
       if (!groupedData[sheetName]) {
         groupedData[sheetName] = [];
@@ -407,23 +401,23 @@
   }
 
   function renderDashboard() {
-    const areas = Object.keys(groupedData).filter(a => a !== "OTRAS ASIGNACIONES / PERSONAL");
-    const totalAreas = areas.length;
+    const destinos = Object.keys(groupedData).filter(d => d !== "OTROS DESTINOS / PERSONAL");
+    const totalDestinos = destinos.length;
 
-    let topAreaName = "-";
-    let topAreaCount = 0;
+    let topDestinoName = "-";
+    let topDestinoCount = 0;
 
-    const labelsAreas = [];
-    const countsAreas = [];
+    const labelsDestinos = [];
+    const countsDestinos = [];
 
-    areas.forEach(area => {
-      const count = groupedData[area].length;
-      labelsAreas.push(area);
-      countsAreas.push(count);
+    destinos.forEach(dest => {
+      const count = groupedData[dest].length;
+      labelsDestinos.push(dest);
+      countsDestinos.push(count);
 
-      if (count > topAreaCount) {
-        topAreaCount = count;
-        topAreaName = area;
+      if (count > topDestinoCount) {
+        topDestinoCount = count;
+        topDestinoName = dest;
       }
     });
 
@@ -442,39 +436,38 @@
       }
     });
 
-    const totalDocsinAreas = countsAreas.reduce((a, b) => a + b, 0);
-    const avg = totalAreas > 0 ? Math.round(totalDocsinAreas / totalAreas) : 0;
+    const totalDocsinDestinos = countsDestinos.reduce((a, b) => a + b, 0);
+    const avg = totalDestinos > 0 ? Math.round(totalDocsinDestinos / totalDestinos) : 0;
 
     // Actualizar KPIs del Dashboard
     document.getElementById('kpiTotalDocs').innerText = totalValidDocs.toLocaleString();
     document.getElementById('kpiYearRange').innerText = minAnio === maxAnio ? minAnio : `${minAnio} - ${maxAnio}`;
-    document.getElementById('kpiTotalAreas').innerText = totalAreas;
+    document.getElementById('kpiTotalAreas').innerText = totalDestinos;
     document.getElementById('kpiTopYear').innerText = `${topYear} (${topYearCount.toLocaleString()})`;
-    document.getElementById('kpiTopArea').innerText = `${topAreaName} (${topAreaCount})`;
+    document.getElementById('kpiTopArea').innerText = `${topDestinoName} (${topDestinoCount})`;
 
     // Actualizar plantilla de PDF
     document.getElementById('pdfTotalDocs').innerText = totalValidDocs.toLocaleString();
     document.getElementById('pdfStartYear').innerText = minAnio;
     document.getElementById('pdfEndYear').innerText = maxAnio;
     document.getElementById('pdfTopYear').innerText = `${topYear} con ${topYearCount.toLocaleString()} documento(s)`;
-    document.getElementById('pdfTotalAreas').innerText = totalAreas;
-    document.getElementById('pdfTopArea').innerText = `${topAreaName} con ${topAreaCount} documento(s)`;
-    document.getElementById('pdfTopAreaConcl').innerText = topAreaName;
+    document.getElementById('pdfTotalAreas').innerText = totalDestinos;
+    document.getElementById('pdfTopArea').innerText = `${topDestinoName} con ${topDestinoCount} documento(s)`;
+    document.getElementById('pdfTopAreaConcl').innerText = topDestinoName;
     document.getElementById('pdfConclStartYear').innerText = minAnio;
-    document.getElementById('pdfRecStartYear').innerText = minAnio;
 
     // Poblado de Tabla
     const tableBody = document.getElementById('summaryTableBody');
     tableBody.innerHTML = "";
-    areas.forEach(area => {
-      const count = groupedData[area].length;
-      const pct = totalDocsinAreas > 0 ? ((count / totalDocsinAreas) * 100).toFixed(1) : 0;
+    destinos.forEach(dest => {
+      const count = groupedData[dest].length;
+      const pct = totalDocsinDestinos > 0 ? ((count / totalDocsinDestinos) * 100).toFixed(1) : 0;
       
       let badge = count > avg ? '<span style="color:#d97706; font-weight:bold;">Alta Carga</span>' : '<span style="color:#16a34a;">Normal</span>';
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${area}</strong></td>
+        <td><strong>${dest}</strong></td>
         <td>${count.toLocaleString()}</td>
         <td>${pct}%</td>
         <td>${badge}</td>
@@ -482,11 +475,11 @@
       tableBody.appendChild(tr);
     });
 
-    renderCharts(labelsAreas, countsAreas, aniosValidos, aniosValidos.map(y => yearCounts[y]));
+    renderCharts(labelsDestinos, countsDestinos, aniosValidos, aniosValidos.map(y => yearCounts[y]));
     document.getElementById('dashboard').style.display = 'block';
   }
 
-  function renderCharts(labelsAreas, dataAreas, labelsAnios, dataAnios) {
+  function renderCharts(labelsDestinos, dataDestinos, labelsAnios, dataAnios) {
     if (barChartInstance) barChartInstance.destroy();
     if (pieChartInstance) pieChartInstance.destroy();
     if (lineChartInstance) lineChartInstance.destroy();
@@ -514,14 +507,14 @@
     // Bar Chart
     barChartInstance = new Chart(document.getElementById('barChart'), {
       type: 'bar',
-      data: { labels: labelsAreas, datasets: [{ label: 'Documentos', data: dataAreas, backgroundColor: '#2563eb' }] },
+      data: { labels: labelsDestinos, datasets: [{ label: 'Documentos', data: dataDestinos, backgroundColor: '#2563eb' }] },
       options: { responsive: true, plugins: { legend: { display: false } } }
     });
 
     // Pie Chart
     pieChartInstance = new Chart(document.getElementById('pieChart'), {
       type: 'doughnut',
-      data: { labels: labelsAreas, datasets: [{ data: dataAreas, backgroundColor: colors }] },
+      data: { labels: labelsDestinos, datasets: [{ data: dataDestinos, backgroundColor: colors }] },
       options: { responsive: true }
     });
   }
@@ -538,7 +531,7 @@
       XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheetName);
     }
 
-    XLSX.writeFile(newWorkbook, "Matriz_Por_Dependencias.xlsx");
+    XLSX.writeFile(newWorkbook, "Matriz_Por_Destinos.xlsx");
   }
 
   function generarInformePDF() {

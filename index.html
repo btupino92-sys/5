@@ -599,4 +599,165 @@
       const dataObj = groupedData[key];
       const count = dataObj.rows.length;
       const pct = totalDocsinDestinos > 0 ? ((count / totalDocsinDestinos) * 100).toFixed(1) : 0;
-      let badge = count > avg ? '<span style="color:#d97706; font-weight:bold;">Alta Carga</span>'
+      let badge = count > avg ? '<span style="color:#d97706; font-weight:bold;">Alta Carga</span>' : '<span style="color:#16a34a;">Normal</span>';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${dataObj.fullName}</strong></td>
+        <td>${count.toLocaleString()}</td>
+        <td>${pct}%</td>
+        <td>${badge}</td>
+      `;
+      summaryTableBody.appendChild(tr);
+
+      const trRep = document.createElement('tr');
+      trRep.innerHTML = `
+        <td style="border: 1px solid #cbd5e1; padding: 6px;">${dataObj.fullName}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${count.toLocaleString()}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${pct}%</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${count > avg ? 'Alta' : 'Normal'}</td>
+      `;
+      repTableBody.appendChild(trRep);
+
+      const trNote = document.createElement('tr');
+      trNote.innerHTML = `
+        <td style="border: 1px solid #cbd5e1; padding: 6px;">${dataObj.fullName}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${count.toLocaleString()}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${pct}%</td>
+      `;
+      noteTableBody.appendChild(trNote);
+    });
+
+    renderCharts(labelsDestinos, countsDestinos, aniosValidos, aniosValidos.map(y => yearCounts[y]));
+    document.getElementById('dashboard').style.display = 'block';
+  }
+
+  function renderCharts(labelsDestinos, dataDestinos, labelsAnios, dataAnios) {
+    if (barChartInstance) barChartInstance.destroy();
+    if (pieChartInstance) pieChartInstance.destroy();
+    if (lineChartInstance) lineChartInstance.destroy();
+
+    const colors = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#d97706', '#16a34a', '#0891b2', '#4f46e5'];
+
+    lineChartInstance = new Chart(document.getElementById('lineChart'), {
+      type: 'line',
+      data: {
+        labels: labelsAnios,
+        datasets: [{
+          label: 'Documentos Emitidos',
+          data: dataAnios,
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 5
+        }]
+      },
+      options: { responsive: true }
+    });
+
+    barChartInstance = new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: { labels: labelsDestinos, datasets: [{ label: 'Documentos', data: dataDestinos, backgroundColor: '#2563eb' }] },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    pieChartInstance = new Chart(document.getElementById('pieChart'), {
+      type: 'doughnut',
+      data: { labels: labelsDestinos, datasets: [{ data: dataDestinos, backgroundColor: colors }] },
+      options: { responsive: true }
+    });
+  }
+
+  // 1. Descargar Excel Multitabla por Destinos con Estilos y Ancho Abierto
+  function procesarYDescargarExcelMultitabla() {
+    if (!rawExcelData) return;
+
+    const headers = rawExcelData[0];
+    const newWorkbook = XLSX.utils.book_new();
+
+    for (const sheetName in groupedData) {
+      const dataObj = groupedData[sheetName];
+      const sheetContent = [headers, ...dataObj.rows];
+      const newWorksheet = XLSX.utils.aoa_to_sheet(sheetContent);
+      
+      aplicarEstilosProfesionales(newWorksheet);
+      XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheetName);
+    }
+
+    XLSX.writeFile(newWorkbook, "Matriz_Consolidada_Por_Destinos.xlsx");
+  }
+
+  // 2. Descargar ZIP con archivos Excel individuales estilizados y celdas abiertas
+  async function descargarZipIndividuales() {
+    if (!rawExcelData) return;
+
+    const zip = new JSZip();
+    const headers = rawExcelData[0];
+
+    for (const sheetName in groupedData) {
+      const dataObj = groupedData[sheetName];
+      
+      const singleWorkbook = XLSX.utils.book_new();
+      const sheetContent = [headers, ...dataObj.rows];
+      const worksheet = XLSX.utils.aoa_to_sheet(sheetContent);
+      
+      aplicarEstilosProfesionales(worksheet);
+      XLSX.utils.book_append_sheet(singleWorkbook, worksheet, "Documentos");
+
+      const excelBuffer = XLSX.write(singleWorkbook, { bookType: 'xlsx', type: 'array', cellStyles: true });
+
+      const cleanFileName = dataObj.fullName.replace(/[:\/\?*\[\]]/g, "_").trim();
+      zip.file(`Destino_${cleanFileName}.xlsx`, excelBuffer);
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "Excel_Individuales_Por_Destino.zip";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // 3. Descargar Informe Técnico en Word (.docx)
+  function descargarInformeWord() {
+    const htmlContent = document.getElementById('wordReportTemplate').innerHTML;
+    const converted = htmlDocx.asBlob(htmlContent, {
+      orientation: 'portrait',
+      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+    });
+
+    const url = URL.createObjectURL(converted);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "Informe_Tecnico_Gestion_Documental.docx";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // 4. Descargar Nota a SG en Word (.docx)
+  function descargarNotaWord() {
+    const htmlContent = document.getElementById('wordNoteTemplate').innerHTML;
+    const converted = htmlDocx.asBlob(htmlContent, {
+      orientation: 'portrait',
+      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+    });
+
+    const url = URL.createObjectURL(converted);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "Nota_Informativa_Secretaria_General.docx";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+</script>
+
+</body>
+</html>

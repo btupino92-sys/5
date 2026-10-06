@@ -125,4 +125,589 @@
     }
 
     .chart-card {
-      background: var(--card-bg
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .chart-card h4 { margin-top: 0; color: #334155; font-size: 15px; }
+
+    /* Tabla */
+    .table-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 24px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background-color: #f1f5f9; font-weight: 600; }
+
+    .dashboard-section { display: none; }
+
+    /* Plantillas ocultas para exportar a Word (.docx) */
+    .export-templates {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h2><i class="fa-solid fa-chart-line"></i> Sistema de Control y Gestión Documental</h2>
+    <p>Procesamiento automatizado de matrices, filtro por destino (Columna K), exportación ZIP individual y Word (.docx).</p>
+  </div>
+
+  <div class="upload-card">
+    <input type="file" id="upload" accept=".xlsx, .xls, .csv" />
+    <div class="action-grid">
+      <button id="processBtn" class="btn btn-excel" onclick="procesarYDescargarExcelMultitabla()" disabled>
+        <i class="fa-solid fa-file-excel"></i> 1. Excel Multitabla (Col. K)
+      </button>
+      <button id="zipBtn" class="btn btn-zip" onclick="descargarZipIndividuales()" disabled>
+        <i class="fa-solid fa-file-zipper"></i> 2. ZIP con Excel Individuales
+      </button>
+      <button id="wordReportBtn" class="btn btn-word-report" onclick="descargarInformeWord()" disabled>
+        <i class="fa-solid fa-file-word"></i> 3. Informe Técnico (Word)
+      </button>
+      <button id="wordNoteBtn" class="btn btn-word-note" onclick="descargarNotaWord()" disabled>
+        <i class="fa-solid fa-envelope-open-text"></i> 4. Nota a SG (Word)
+      </button>
+    </div>
+    <p id="status" style="margin-top: 15px; color: #64748b; font-size: 14px; font-weight: 500;"></p>
+  </div>
+
+  <div id="dashboard" class="dashboard-section">
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon"><i class="fa-solid fa-file-contract"></i></div>
+        <div class="kpi-data">
+          <h3 id="kpiTotalDocs">0</h3>
+          <p>Total Documentos</p>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon"><i class="fa-solid fa-calendar-days"></i></div>
+        <div class="kpi-data">
+          <h3 id="kpiYearRange">-</h3>
+          <p>Rango de Años</p>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon"><i class="fa-solid fa-building-user"></i></div>
+        <div class="kpi-data">
+          <h3 id="kpiTotalDestinos">0</h3>
+          <p>Destinos (Columna K)</p>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="kpi-data">
+          <h3 id="kpiTopYear">-</h3>
+          <p>Año con Mayor Emisión</p>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="kpi-data">
+          <h3 id="kpiTopDestino" style="font-size: 13px;">-</h3>
+          <p>Mayor Carga por Destino</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="charts-grid">
+      <div class="chart-card" style="grid-column: span 2;">
+        <h4><i class="fa-solid fa-chart-line"></i> Tendencia de Emisión Documental por Año (Columna FE EMISION)</h4>
+        <canvas id="lineChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h4><i class="fa-solid fa-chart-bar"></i> Volumetría por Destino (Columna K)</h4>
+        <canvas id="barChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h4><i class="fa-solid fa-chart-pie"></i> Distribución Porcentual por Destino</h4>
+        <canvas id="pieChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Tabla Detallada -->
+    <div class="table-card">
+      <h4><i class="fa-solid fa-list-check"></i> Concentrado de Unidades Orgánicas / Destinos (Columna K)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Destino / Unidad Orgánica (Columna K)</th>
+            <th>Cantidad de Documentos</th>
+            <th>Participación (%)</th>
+            <th>Estado de Carga</th>
+          </tr>
+        </thead>
+        <tbody id="summaryTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Plantillas HTML Ocultas para Generar Documentos Word (.docx) -->
+<div class="export-templates">
+  <!-- INFORME TÉCNICO -->
+  <div id="wordReportTemplate">
+    <div style="text-align: center; font-family: Arial, sans-serif;">
+      <h2 style="color: #0f172a; margin-bottom: 5px;">INFORME TÉCNICO N° 001-2026-SCD/OGTI</h2>
+      <p style="font-size: 11pt; color: #555;">Evaluación y Consolidado de Carga Documental por Unidades Orgánicas de Destino (Columna K)</p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #2563eb; margin: 15px 0;">
+
+    <h3 style="color: #2563eb; font-size: 13pt;">1. OBJETIVO</h3>
+    <p style="font-size: 11pt; text-align: justify; line-height: 1.5;">
+      El presente informe tiene por objeto consolidar, evaluar y clasificar la volumetría de expedientes y trámites institucionales segmentados según el <strong>Destino (Columna K)</strong> de la matriz de control, con la finalidad de optimizar la distribución de expedientes por unidad orgánica y facilitar la gestión documental sectorial.
+    </p>
+
+    <h3 style="color: #2563eb; font-size: 13pt;">2. ANÁLISIS TEMPORAL Y VOLUMETRÍA GENERAL</h3>
+    <p style="font-size: 11pt; text-align: justify; line-height: 1.5;">
+      A partir del procesamiento integral de la matriz de registros, se han contabilizado un total de <strong id="repTotalDocs">0</strong> expedientes válidos, abarcando un rango temporal desde el año <strong id="repStartYear">-</strong> hasta el año <strong id="repEndYear">-</strong>. El periodo con mayor concentración de emisión documental corresponde al año <strong id="repTopYear">-</strong>.
+    </p>
+
+    <h3 style="color: #2563eb; font-size: 13pt;">3. CUADRO RESUMEN DE UNIDADES ORGÁNICAS AGRUPADAS POR DESTINO</h3>
+    <p style="font-size: 11pt; text-align: justify; line-height: 1.5;">
+      A continuación, se detalla el consolidado de la carga documental agrupada por cada unidad orgánica receptora registrada en la Columna K:
+    </p>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10pt;">
+      <thead>
+        <tr style="background-color: #f1f5f9;">
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Unidad Orgánica / Destino (Columna K)</th>
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">Cantidad de Documentos</th>
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">Participación (%)</th>
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">Estado Operativo</th>
+        </tr>
+      </thead>
+      <tbody id="repTableBody">
+        <!-- Relleno dinámico -->
+      </tbody>
+    </table>
+
+    <h3 style="color: #2563eb; font-size: 13pt; margin-top: 20px;">4. CONCLUSIONES Y RECOMENDACIONES</h3>
+    <ul style="font-size: 11pt; line-height: 1.6;">
+      <li>Se identificó que la dependencia con mayor afluencia documental es <strong id="repTopDestinoName">-</strong> con <span id="repTopDestinoCount">0</span> expedientes.</li>
+      <li>Se recomienda remitir los archivos Excel individuales generados a cada jefatura de unidad para su debida fiscalización y atención oportuna.</li>
+    </ul>
+  </div>
+
+  <!-- NOTA PARA ELEVAR A SECRETARÍA GENERAL (SG) -->
+  <div id="wordNoteTemplate">
+    <div style="font-family: Arial, sans-serif;">
+      <h2 style="color: #0f172a; text-align: center; margin-bottom: 5px;">NOTA INFORMATIVA N° 001-2026/SCD</h2>
+      <hr style="border: none; border-top: 1px solid #0f172a; margin: 15px 0;">
+      <p style="font-size: 11pt;"><strong>A:</strong> Secretaría General (SG)</p>
+      <p style="font-size: 11pt;"><strong>DE:</strong> Oficina de Control y Gestión Documental</p>
+      <p style="font-size: 11pt;"><strong>ASUNTO:</strong> Elevación de consolidado y archivos sectoriales por unidades de destino (Columna K)</p>
+      <p style="font-size: 11pt;"><strong>FECHA:</strong> <span id="noteCurrentDate"></span></p>
+    </div>
+    <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 15px 0;">
+
+    <h3 style="color: #0f172a; font-size: 12pt;">1. PROPÓSITO</h3>
+    <p style="font-size: 11pt; text-align: justify; line-height: 1.5;">
+      Mediante el presente documento, se pone en conocimiento de su Despacho el procesamiento y segmentación automatizada de la matriz institucional de trámites, depurada en función de los destinos oficiales establecidos en la <strong>Columna K</strong>.
+    </p>
+
+    <h3 style="color: #0f172a; font-size: 12pt;">2. RESUMEN EJECUTIVO PARA LA TOMA DE DECISIONES</h3>
+    <p style="font-size: 11pt; text-align: justify; line-height: 1.5;">
+      Se han procesado un total de <strong id="noteTotalDocs">0</strong> expedientes distribuidos en <strong id="noteTotalDestinos">0</strong> unidades orgánicas receptoras. La unidad con mayor carga documentaria es <strong id="noteTopDestino">-</strong>.
+    </p>
+
+    <h3 style="color: #0f172a; font-size: 12pt;">3. DETALLE DE UNIDADES Y VOLUMEN DOCUMENTAL</h3>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10pt;">
+      <thead>
+        <tr style="background-color: #f1f5f9;">
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Unidad Orgánica / Destino</th>
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">Total Expedientes</th>
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">Incidencia (%)</th>
+        </tr>
+      </thead>
+      <tbody id="noteTableBody">
+        <!-- Relleno dinámico -->
+      </tbody>
+    </table>
+
+    <h3 style="color: #0f172a; font-size: 12pt; margin-top: 20px;">4. SOLICITUD</h3>
+    <p style="font-size: 11pt; text-align: justify; line-height: 1.5;">
+      Se solicita a Secretaría General (SG) la aprobación para derivar los expedientes sectoriales a cada una de las dependencias mencionadas para su cumplimiento normativo.
+    </p>
+  </div>
+</div>
+
+<script>
+  let rawExcelData = null;
+  let groupedData = {};
+  let yearCounts = {};
+  let totalValidDocs = 0;
+  let ignoredCount = 0;
+
+  let barChartInstance = null;
+  let pieChartInstance = null;
+  let lineChartInstance = null;
+
+  const PERSON_KEYWORDS = ["SR.", "SRA.", "SRITA.", "DON", "DOÑA", "ING.", "LIC.", "DR.", "DRA.", "ABOG."];
+
+  // Función para quitar tildes y estandarizar el texto de manera segura
+  function normalizarTexto(texto) {
+    if (!texto) return "";
+    return String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+  }
+
+  document.getElementById('upload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+
+      rawExcelData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+      if (rawExcelData.length > 1) {
+        agruparYAnalizarDatos();
+        renderDashboard();
+        document.getElementById('processBtn').disabled = false;
+        document.getElementById('zipBtn').disabled = false;
+        document.getElementById('wordReportBtn').disabled = false;
+        document.getElementById('wordNoteBtn').disabled = false;
+        document.getElementById('status').innerText = "Matriz analizada con éxito. Ya puede descargar el Excel multitabla, el ZIP con archivos individuales o los documentos en Word (.docx).";
+      } else {
+        alert("El archivo no contiene filas de datos válidas.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function esNombrePersona(texto) {
+    if (!texto) return true;
+    const strNorm = normalizarTexto(texto);
+
+    for (let key of PERSON_KEYWORDS) {
+      if (strNorm.startsWith(key + " ") || strNorm.includes(" " + key + " ")) return true;
+    }
+
+    // Se incluyen términos institucionales con soporte sin tildes (DIRECCION, SECRETARIA, ORGANO, etc.)
+    const tieneArea = /(DIRECCION|OFICINA|UNIDAD|SUBDIRECCION|CENTRO|EQUIPO|DEPARTAMENTO|SECRETARIA|GERENCIA|MIMP|OACGD|CENDOC|CAR|PROCURADURIA|ORGANO|DESPACHO|COORDINACION|COMISION)/i.test(strNorm);
+    
+    if (!tieneArea && strNorm.split(" ").length >= 2 && strNorm.split(" ").length <= 4 && !/[0-9]/.test(strNorm)) {
+      return true; 
+    }
+
+    return false;
+  }
+
+  function extraerAnio(fila) {
+    if (fila[0] && !isNaN(fila[0]) && String(fila[0]).length === 4) {
+      return String(fila[0]);
+    }
+
+    let fechaRaw = fila[2];
+    if (!fechaRaw) return "DESCONOCIDO";
+
+    if (typeof fechaRaw === 'number') {
+      let dateObj = XLSX.SSF.parse_date_code(fechaRaw);
+      if (dateObj && dateObj.y) return String(dateObj.y);
+    }
+
+    let strFecha = String(fechaRaw);
+    let match = strFecha.match(/ (19\d\d|20\d\d) /);
+    if (match) return match[0];
+
+    return "DESCONOCIDO";
+  }
+
+  function agruparYAnalizarDatos() {
+    groupedData = {};
+    yearCounts = {};
+    totalValidDocs = 0;
+    ignoredCount = 0;
+
+    const rows = rawExcelData.slice(1);
+
+    rows.forEach(row => {
+      if (row.length === 0) return;
+
+      // Año
+      let anio = extraerAnio(row);
+      if (anio !== "DESCONOCIDO") {
+        yearCounts[anio] = (yearCounts[anio] || 0) + 1;
+      }
+
+      // Destino (Columna K - Índice 10)
+      let destinoValRaw = row[10] ? String(row[10]).trim() : "";
+      let destinoVal = "";
+
+      if (!destinoValRaw || esNombrePersona(destinoValRaw)) {
+        ignoredCount++;
+        destinoVal = "OTROS DESTINOS / PERSONAL";
+      } else {
+        destinoVal = destinoValRaw;
+      }
+
+      // Nombre seguro para pestañas de Excel
+      let sheetName = destinoVal.replace(/[:\/\?*\[\]]/g, "_").substring(0, 30);
+
+      if (!groupedData[sheetName]) {
+        groupedData[sheetName] = {
+          fullName: destinoVal,
+          rows: []
+        };
+      }
+      groupedData[sheetName].rows.push(row);
+      totalValidDocs++;
+    });
+  }
+
+  function renderDashboard() {
+    const keys = Object.keys(groupedData).filter(k => k !== "OTROS DESTINOS / PERSONAL");
+    const totalDestinos = keys.length;
+
+    let topDestinoName = "-";
+    let topDestinoCount = 0;
+
+    const labelsDestinos = [];
+    const countsDestinos = [];
+
+    keys.forEach(key => {
+      const dataObj = groupedData[key];
+      const count = dataObj.rows.length;
+      labelsDestinos.push(dataObj.fullName);
+      countsDestinos.push(count);
+
+      if (count > topDestinoCount) {
+        topDestinoCount = count;
+        topDestinoName = dataObj.fullName;
+      }
+    });
+
+    // Rango de años
+    const aniosValidos = Object.keys(yearCounts).filter(y => y !== "DESCONOCIDO").sort();
+    const minAnio = aniosValidos.length > 0 ? aniosValidos[0] : "N/A";
+    const maxAnio = aniosValidos.length > 0 ? aniosValidos[aniosValidos.length - 1] : "N/A";
+
+    let topYear = "-";
+    let topYearCount = 0;
+    aniosValidos.forEach(y => {
+      if (yearCounts[y] > topYearCount) {
+        topYearCount = yearCounts[y];
+        topYear = y;
+      }
+    });
+
+    const totalDocsinDestinos = countsDestinos.reduce((a, b) => a + b, 0);
+    const avg = totalDestinos > 0 ? Math.round(totalDocsinDestinos / totalDestinos) : 0;
+
+    // Actualizar KPIs
+    document.getElementById('kpiTotalDocs').innerText = totalValidDocs.toLocaleString();
+    document.getElementById('kpiYearRange').innerText = minAnio === maxAnio ? minAnio : `${minAnio} - ${maxAnio}`;
+    document.getElementById('kpiTotalDestinos').innerText = totalDestinos;
+    document.getElementById('kpiTopYear').innerText = `${topYear} (${topYearCount.toLocaleString()})`;
+    document.getElementById('kpiTopDestino').innerText = `${topDestinoName} (${topDestinoCount})`;
+
+    // Actualizar datos de plantillas Word
+    document.getElementById('repTotalDocs').innerText = totalValidDocs.toLocaleString();
+    document.getElementById('repStartYear').innerText = minAnio;
+    document.getElementById('repEndYear').innerText = maxAnio;
+    document.getElementById('repTopYear').innerText = `${topYear} (${topYearCount.toLocaleString()} documentos)`;
+    document.getElementById('repTopDestinoName').innerText = topDestinoName;
+    document.getElementById('repTopDestinoCount').innerText = topDestinoCount.toLocaleString();
+
+    document.getElementById('noteTotalDocs').innerText = totalValidDocs.toLocaleString();
+    document.getElementById('noteTotalDestinos').innerText = totalDestinos;
+    document.getElementById('noteTopDestino').innerText = `${topDestinoName} (${topDestinoCount} docs)`;
+    document.getElementById('noteCurrentDate').innerText = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Rellenar tablas de informes
+    const repTableBody = document.getElementById('repTableBody');
+    const noteTableBody = document.getElementById('noteTableBody');
+    const summaryTableBody = document.getElementById('summaryTableBody');
+
+    repTableBody.innerHTML = "";
+    noteTableBody.innerHTML = "";
+    summaryTableBody.innerHTML = "";
+
+    keys.forEach(key => {
+      const dataObj = groupedData[key];
+      const count = dataObj.rows.length;
+      const pct = totalDocsinDestinos > 0 ? ((count / totalDocsinDestinos) * 100).toFixed(1) : 0;
+      let badge = count > avg ? '<span style="color:#d97706; font-weight:bold;">Alta Carga</span>' : '<span style="color:#16a34a;">Normal</span>';
+
+      // 1. Dashboard Table
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${dataObj.fullName}</strong></td>
+        <td>${count.toLocaleString()}</td>
+        <td>${pct}%</td>
+        <td>${badge}</td>
+      `;
+      summaryTableBody.appendChild(tr);
+
+      // 2. Report Table (.docx)
+      const trRep = document.createElement('tr');
+      trRep.innerHTML = `
+        <td style="border: 1px solid #cbd5e1; padding: 6px;">${dataObj.fullName}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${count.toLocaleString()}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${pct}%</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${count > avg ? 'Alta' : 'Normal'}</td>
+      `;
+      repTableBody.appendChild(trRep);
+
+      // 3. Note Table (.docx)
+      const trNote = document.createElement('tr');
+      trNote.innerHTML = `
+        <td style="border: 1px solid #cbd5e1; padding: 6px;">${dataObj.fullName}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${count.toLocaleString()}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${pct}%</td>
+      `;
+      noteTableBody.appendChild(trNote);
+    });
+
+    renderCharts(labelsDestinos, countsDestinos, aniosValidos, aniosValidos.map(y => yearCounts[y]));
+    document.getElementById('dashboard').style.display = 'block';
+  }
+
+  function renderCharts(labelsDestinos, dataDestinos, labelsAnios, dataAnios) {
+    if (barChartInstance) barChartInstance.destroy();
+    if (pieChartInstance) pieChartInstance.destroy();
+    if (lineChartInstance) lineChartInstance.destroy();
+
+    const colors = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#d97706', '#16a34a', '#0891b2', '#4f46e5'];
+
+    lineChartInstance = new Chart(document.getElementById('lineChart'), {
+      type: 'line',
+      data: {
+        labels: labelsAnios,
+        datasets: [{
+          label: 'Documentos Emitidos',
+          data: dataAnios,
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 5
+        }]
+      },
+      options: { responsive: true }
+    });
+
+    barChartInstance = new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: { labels: labelsDestinos, datasets: [{ label: 'Documentos', data: dataDestinos, backgroundColor: '#2563eb' }] },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    pieChartInstance = new Chart(document.getElementById('pieChart'), {
+      type: 'doughnut',
+      data: { labels: labelsDestinos, datasets: [{ data: dataDestinos, backgroundColor: colors }] },
+      options: { responsive: true }
+    });
+  }
+
+  // 1. Descargar Excel Multitabla por Destinos (Columna K)
+  function procesarYDescargarExcelMultitabla() {
+    if (!rawExcelData) return;
+
+    const headers = rawExcelData[0];
+    const newWorkbook = XLSX.utils.book_new();
+
+    for (const sheetName in groupedData) {
+      const dataObj = groupedData[sheetName];
+      const sheetContent = [headers, ...dataObj.rows];
+      const newWorksheet = XLSX.utils.aoa_to_sheet(sheetContent);
+      XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheetName);
+    }
+
+    XLSX.writeFile(newWorkbook, "Matriz_Consolidada_Por_Destinos.xlsx");
+  }
+
+  // 2. Descargar ZIP con archivos Excel individuales usando nombres completos de las unidades
+  async function descargarZipIndividuales() {
+    if (!rawExcelData) return;
+
+    const zip = new JSZip();
+    const headers = rawExcelData[0];
+
+    for (const sheetName in groupedData) {
+      const dataObj = groupedData[sheetName];
+      
+      const singleWorkbook = XLSX.utils.book_new();
+      const sheetContent = [headers, ...dataObj.rows];
+      const worksheet = XLSX.utils.aoa_to_sheet(sheetContent);
+      XLSX.utils.book_append_sheet(singleWorkbook, worksheet, "Documentos");
+
+      const excelBuffer = XLSX.write(singleWorkbook, { bookType: 'xlsx', type: 'array' });
+
+      const cleanFileName = dataObj.fullName.replace(/[:\/\?*\[\]]/g, "_").trim();
+      zip.file(`Destino_${cleanFileName}.xlsx`, excelBuffer);
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "Excel_Individuales_Por_Destino.zip";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // 3. Descargar Informe Técnico en Word (.docx)
+  function descargarInformeWord() {
+    const htmlContent = document.getElementById('wordReportTemplate').innerHTML;
+    const converted = htmlDocx.asBlob(htmlContent, {
+      orientation: 'portrait',
+      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+    });
+
+    const url = URL.createObjectURL(converted);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "Informe_Tecnico_Gestion_Documental.docx";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // 4. Descargar Nota a SG en Word (.docx)
+  function descargarNotaWord() {
+    const htmlContent = document.getElementById('wordNoteTemplate').innerHTML;
+    const converted = htmlDocx.asBlob(htmlContent, {
+      orientation: 'portrait',
+      margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 }
+    });
+
+    const url = URL.createObjectURL(converted);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "Nota_Informativa_Secretaria_General.docx";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+</script>
+
+</body>
+</html>

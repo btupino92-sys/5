@@ -147,11 +147,7 @@
     th { background-color: #f1f5f9; font-weight: 600; }
 
     .dashboard-section { display: none; }
-
-    /* Plantillas ocultas para exportar a Word (.docx) */
-    .export-templates {
-      display: none;
-    }
+    .export-templates { display: none; }
   </style>
 </head>
 <body>
@@ -295,9 +291,7 @@
           <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">Estado Operativo</th>
         </tr>
       </thead>
-      <tbody id="repTableBody">
-        <!-- Relleno dinámico -->
-      </tbody>
+      <tbody id="repTableBody"></tbody>
     </table>
 
     <h3 style="color: #2563eb; font-size: 13pt; margin-top: 20px;">4. CONCLUSIONES Y RECOMENDACIONES</h3>
@@ -338,9 +332,7 @@
           <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">Incidencia (%)</th>
         </tr>
       </thead>
-      <tbody id="noteTableBody">
-        <!-- Relleno dinámico -->
-      </tbody>
+      <tbody id="noteTableBody"></tbody>
     </table>
 
     <h3 style="color: #0f172a; font-size: 12pt; margin-top: 20px;">4. SOLICITUD</h3>
@@ -363,7 +355,6 @@
 
   const PERSON_KEYWORDS = ["SR.", "SRA.", "SRITA.", "DON", "DOÑA", "ING.", "LIC.", "DR.", "DRA.", "ABOG."];
 
-  // Función para quitar tildes y estandarizar el texto de manera segura
   function normalizarTexto(texto) {
     if (!texto) return "";
     return String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
@@ -474,16 +465,16 @@
     });
   }
 
-  // Función utilitaria para estilizar la hoja (Ancho automático, cabecera azul, bordes y líneas de cuadrícula)
+  // Función actualizada: Ancho automático holgado + Cabecera color celeste institucional + Cuadrícula de bordes
   function aplicarEstilosProfesionales(worksheet) {
     if (!worksheet['!ref']) return;
     
     const range = XLSX.utils.decode_range(worksheet['!ref']);
     worksheet['!cols'] = [];
 
-    // Calcular ancho automático para cada columna basándose en el contenido más largo
+    // Cálculo dinámico del ancho de columnas para que no se vea apretado
     for (let C = range.s.c; C <= range.e.c; ++C) {
-      let maxLen = 10; // Ancho mínimo por defecto
+      let maxLen = 10;
       for (let R = range.s.r; R <= range.e.r; ++R) {
         const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
         const cell = worksheet[cellAddress];
@@ -494,11 +485,10 @@
           }
         }
       }
-      // Se asigna un ancho holgado (máximo entre longitud + 4 y un límite razonable de 60)
       worksheet['!cols'].push({ wch: Math.min(Math.max(maxLen + 4, 12), 60) });
     }
 
-    // Aplicar estilos visuales a la cabecera y bordes de celdas
+    // Aplicar estilos visuales detallados celda por celda
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
@@ -506,28 +496,29 @@
         
         if (!worksheet[cellAddress].s) worksheet[cellAddress].s = {};
 
-        // Bordes delgados grises para todas las celdas (crea las líneas de cuadrícula visibles)
-        const thinBorder = {
-          top: { style: "thin", color: { rgb: "CBD5E1" } },
-          bottom: { style: "thin", color: { rgb: "CBD5E1" } },
-          left: { style: "thin", color: { rgb: "CBD5E1" } },
-          right: { style: "thin", color: { rgb: "CBD5E1" } }
+        // Bordes finos en todas las celdas para asegurar las líneas de tabla visibles y profesionales
+        const gridBorder = {
+          top: { style: "thin", color: { rgb: "D1D5DB" } },
+          bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+          left: { style: "thin", color: { rgb: "D1D5DB" } },
+          right: { style: "thin", color: { rgb: "D1D5DB" } }
         };
-        worksheet[cellAddress].s.border = thinBorder;
+        worksheet[cellAddress].s.border = gridBorder;
 
-        // Estilo especial para la Fila de Cabecera (Fila 0)
+        // Fila 0: Cabecera con fondo celeste institucional (#38BDF8) y texto blanco en negrita
         if (R === 0) {
-          worksheet[cellAddress].s.fill = { fgColor: { rgb: "2563EB" } }; // Azul institucional
+          worksheet[cellAddress].s.fill = { fgColor: { rgb: "38BDF8" } }; // Color celeste vivo e institucional
           worksheet[cellAddress].s.font = { bold: true, color: { rgb: "FFFFFF" }, name: "Segoe UI", sz: 11 };
-          worksheet[cellAddress].s.alignment = { horizontal: "center", vertical: "center" };
+          worksheet[cellAddress].s.alignment = { horizontal: "center", vertical: "center", wrapText: true };
         } else {
-          worksheet[cellAddress].s.font = { name: "Segoe UI", sz: 10 };
+          // Celdas de datos normales
+          worksheet[cellAddress].s.font = { name: "Segoe UI", sz: 10, color: { rgb: "1E293B" } };
           worksheet[cellAddress].s.alignment = { vertical: "center" };
         }
       }
     }
     
-    // Asegurar que Excel muestre las líneas de división de la hoja
+    // Forzar visualización de líneas de cuadrícula en Excel
     if (!worksheet['!views']) worksheet['!views'] = [{ showGridLines: true }];
   }
 
@@ -658,7 +649,7 @@
 
     barChartInstance = new Chart(document.getElementById('barChart'), {
       type: 'bar',
-      data: { labels: labelsDestinos, datasets: [{ label: 'Documentos', data: dataDestinos, backgroundColor: '#2563eb' }] },
+      data: { labels: labelsDestinos, datasets: [{ label: 'Documentos', data: dataDestinos, backgroundColor: '#38bdf8' }] },
       options: { responsive: true, plugins: { legend: { display: false } } }
     });
 
@@ -669,7 +660,7 @@
     });
   }
 
-  // 1. Descargar Excel Multitabla por Destinos con Estilos y Ancho Abierto
+  // 1. Descargar Excel Multitabla por Destinos con Cabecera Celeste y Cuadrícula
   function procesarYDescargarExcelMultitabla() {
     if (!rawExcelData) return;
 
@@ -688,7 +679,7 @@
     XLSX.writeFile(newWorkbook, "Matriz_Consolidada_Por_Destinos.xlsx");
   }
 
-  // 2. Descargar ZIP con archivos Excel individuales estilizados y celdas abiertas
+  // 2. Descargar ZIP con archivos Excel individuales con estilo profesional
   async function descargarZipIndividuales() {
     if (!rawExcelData) return;
 

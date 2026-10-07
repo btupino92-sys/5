@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Institucional y Procesador de Matriz Documental</title>
   
-  <!-- Librerías externas (Usando SheetJS con soporte de estilos y optimizaciones) -->
+  <!-- Librerías externas -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -367,8 +367,7 @@
     const reader = new FileReader();
     reader.onload = function(evt) {
       const data = new Uint8Array(evt.target.result);
-      // Habilitamos cellStyles: true para que Excel procese los colores y bordes
-      const workbook = XLSX.read(data, { type: 'array', cellStyles: true });
+      const workbook = XLSX.read(data, { type: 'array' });
 
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
@@ -382,7 +381,7 @@
         document.getElementById('zipBtn').disabled = false;
         document.getElementById('wordReportBtn').disabled = false;
         document.getElementById('wordNoteBtn').disabled = false;
-        document.getElementById('status').innerText = "Matriz analizada con éxito. Excel multitabla y ZIP individual listos con formato profesional.";
+        document.getElementById('status').innerText = "Matriz analizada con éxito. Ya puede descargar el Excel multitabla, el ZIP con archivos individuales o los documentos en Word (.docx).";
       } else {
         alert("El archivo no contiene filas de datos válidas.");
       }
@@ -466,14 +465,14 @@
     });
   }
 
-  // Función robusta de estilos: Asigna fondo celeste exacto (#38BDF8), texto blanco y bordes de cuadrícula delgados
+  // Función actualizada: Ancho automático holgado + Cabecera color celeste institucional + Cuadrícula de bordes
   function aplicarEstilosProfesionales(worksheet) {
     if (!worksheet['!ref']) return;
     
     const range = XLSX.utils.decode_range(worksheet['!ref']);
     worksheet['!cols'] = [];
 
-    // Ajuste dinámico de ancho de columnas
+    // Cálculo dinámico del ancho de columnas para que no se vea apretado
     for (let C = range.s.c; C <= range.e.c; ++C) {
       let maxLen = 10;
       for (let R = range.s.r; R <= range.e.r; ++R) {
@@ -481,13 +480,15 @@
         const cell = worksheet[cellAddress];
         if (cell && cell.v !== undefined && cell.v !== null) {
           const cellLen = String(cell.v).length;
-          if (cellLen > maxLen) maxLen = cellLen;
+          if (cellLen > maxLen) {
+            maxLen = cellLen;
+          }
         }
       }
       worksheet['!cols'].push({ wch: Math.min(Math.max(maxLen + 4, 12), 60) });
     }
 
-    // Aplicación de estilos de celda (Fondo, fuente y bordes)
+    // Aplicar estilos visuales detallados celda por celda
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
@@ -495,21 +496,22 @@
         
         if (!worksheet[cellAddress].s) worksheet[cellAddress].s = {};
 
-        // Bordes finos estilo cuadrícula en todas las celdas
-        worksheet[cellAddress].s.border = {
+        // Bordes finos en todas las celdas para asegurar las líneas de tabla visibles y profesionales
+        const gridBorder = {
           top: { style: "thin", color: { rgb: "D1D5DB" } },
           bottom: { style: "thin", color: { rgb: "D1D5DB" } },
           left: { style: "thin", color: { rgb: "D1D5DB" } },
           right: { style: "thin", color: { rgb: "D1D5DB" } }
         };
+        worksheet[cellAddress].s.border = gridBorder;
 
+        // Fila 0: Cabecera con fondo celeste institucional (#38BDF8) y texto blanco en negrita
         if (R === 0) {
-          // Cabecera: Fondo celeste institucional (#38BDF8) y texto blanco en negrita
-          worksheet[cellAddress].s.fill = { patternType: "solid", fgColor: { rgb: "38BDF8" } };
+          worksheet[cellAddress].s.fill = { fgColor: { rgb: "38BDF8" } }; // Color celeste vivo e institucional
           worksheet[cellAddress].s.font = { bold: true, color: { rgb: "FFFFFF" }, name: "Segoe UI", sz: 11 };
           worksheet[cellAddress].s.alignment = { horizontal: "center", vertical: "center", wrapText: true };
         } else {
-          // Celdas de datos
+          // Celdas de datos normales
           worksheet[cellAddress].s.font = { name: "Segoe UI", sz: 10, color: { rgb: "1E293B" } };
           worksheet[cellAddress].s.alignment = { vertical: "center" };
         }
@@ -658,7 +660,7 @@
     });
   }
 
-  // 1. Descargar Excel Multitabla con Estilos Aplicados (cellStyles: true)
+  // 1. Descargar Excel Multitabla por Destinos con Cabecera Celeste y Cuadrícula
   function procesarYDescargarExcelMultitabla() {
     if (!rawExcelData) return;
 
@@ -674,10 +676,10 @@
       XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheetName);
     }
 
-    XLSX.writeFile(newWorkbook, "Matriz_Consolidada_Por_Destinos.xlsx", { cellStyles: true });
+    XLSX.writeFile(newWorkbook, "Matriz_Consolidada_Por_Destinos.xlsx");
   }
 
-  // 2. Descargar ZIP con archivos individuales con Estilos Aplicados
+  // 2. Descargar ZIP con archivos Excel individuales con estilo profesional
   async function descargarZipIndividuales() {
     if (!rawExcelData) return;
 
@@ -694,7 +696,6 @@
       aplicarEstilosProfesionales(worksheet);
       XLSX.utils.book_append_sheet(singleWorkbook, worksheet, "Documentos");
 
-      // Forzar renderizado de celdas con estilos en la serialización binaria
       const excelBuffer = XLSX.write(singleWorkbook, { bookType: 'xlsx', type: 'array', cellStyles: true });
 
       const cleanFileName = dataObj.fullName.replace(/[:\/\?*\[\]]/g, "_").trim();

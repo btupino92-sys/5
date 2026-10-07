@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Institucional y Procesador de Matriz Documental</title>
   
-  <!-- Librerías con soporte de estilos y exportación -->
+  <!-- Librería SheetJS estándar y estable -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- SheetJS Style CDN alternativo para forzar estilos de celda -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx-style@0.8.13/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
@@ -383,7 +381,7 @@
         document.getElementById('zipBtn').disabled = false;
         document.getElementById('wordReportBtn').disabled = false;
         document.getElementById('wordNoteBtn').disabled = false;
-        document.getElementById('status').innerText = "Matriz analizada con éxito. Archivos listos con diseño profesional (cabecera celeste y cuadrícula).";
+        document.getElementById('status').innerText = "Matriz analizada con éxito. Todos los botones de descarga están activos.";
       } else {
         alert("El archivo no contiene filas de datos válidas.");
       }
@@ -465,60 +463,6 @@
       groupedData[sheetName].rows.push(row);
       totalValidDocs++;
     });
-  }
-
-  // Aplicación estricta de estilos profesionales para SheetJS-Style
-  function aplicarEstilosProfesionales(worksheet) {
-    if (!worksheet['!ref']) return;
-    
-    const range = XLSX.utils.decode_range(worksheet['!ref']);
-    worksheet['!cols'] = [];
-
-    // Cálculo dinámico del ancho de columnas
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      let maxLen = 10;
-      for (let R = range.s.r; R <= range.e.r; ++R) {
-        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-        const cell = worksheet[cellAddress];
-        if (cell && cell.v !== undefined && cell.v !== null) {
-          const cellLen = String(cell.v).length;
-          if (cellLen > maxLen) maxLen = cellLen;
-        }
-      }
-      worksheet['!cols'].push({ wch: Math.min(Math.max(maxLen + 4, 12), 60) });
-    }
-
-    // Estilos de bordes y colores exactos
-    const borderStyle = {
-      top: { style: "thin", color: { rgb: "CBD5E1" } },
-      bottom: { style: "thin", color: { rgb: "CBD5E1" } },
-      left: { style: "thin", color: { rgb: "CBD5E1" } },
-      right: { style: "thin", color: { rgb: "CBD5E1" } }
-    };
-
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!worksheet[cellAddress]) continue;
-        
-        if (!worksheet[cellAddress].s) worksheet[cellAddress].s = {};
-        
-        worksheet[cellAddress].s.border = borderStyle;
-
-        if (R === 0) {
-          // Encabezado con color celeste institucional vivo y texto blanco en negrita
-          worksheet[cellAddress].s.fill = { fgColor: { rgb: "38BDF8" } };
-          worksheet[cellAddress].s.font = { name: "Segoe UI", sz: 11, bold: true, color: { rgb: "FFFFFF" } };
-          worksheet[cellAddress].s.alignment = { horizontal: "center", vertical: "center", wrapText: true };
-        } else {
-          // Celdas de datos con fuente limpia y alineación vertical
-          worksheet[cellAddress].s.font = { name: "Segoe UI", sz: 10, color: { rgb: "1E293B" } };
-          worksheet[cellAddress].s.alignment = { vertical: "center" };
-        }
-      }
-    }
-    
-    if (!worksheet['!views']) worksheet['!views'] = [{ showGridLines: true }];
   }
 
   function renderDashboard() {
@@ -659,7 +603,7 @@
     });
   }
 
-  // 1. Descargar Excel Multitabla con estilos integrados
+  // 1. Descargar Excel Multitabla
   function procesarYDescargarExcelMultitabla() {
     if (!rawExcelData) return;
 
@@ -671,15 +615,16 @@
       const sheetContent = [headers, ...dataObj.rows];
       const newWorksheet = XLSX.utils.aoa_to_sheet(sheetContent);
       
-      aplicarEstilosProfesionales(newWorksheet);
+      // Activar líneas de cuadrícula visibles nativas
+      if (!newWorksheet['!views']) newWorksheet['!views'] = [{ showGridLines: true }];
+      
       XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, sheetName);
     }
 
-    // Utiliza el motor extendido para exportar los estilos visuales
     XLSX.writeFile(newWorkbook, "Matriz_Consolidada_Por_Destinos.xlsx");
   }
 
-  // 2. Descargar ZIP con archivos individuales con cabecera celeste y bordes
+  // 2. Descargar ZIP con archivos individuales
   async function descargarZipIndividuales() {
     if (!rawExcelData) return;
 
@@ -693,7 +638,8 @@
       const sheetContent = [headers, ...dataObj.rows];
       const worksheet = XLSX.utils.aoa_to_sheet(sheetContent);
       
-      aplicarEstilosProfesionales(worksheet);
+      if (!worksheet['!views']) worksheet['!views'] = [{ showGridLines: true }];
+      
       XLSX.utils.book_append_sheet(singleWorkbook, worksheet, "Documentos");
 
       const excelBuffer = XLSX.write(singleWorkbook, { bookType: 'xlsx', type: 'array' });
